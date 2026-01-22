@@ -7,7 +7,7 @@ exp_name: cpc_finwhale
 data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
 results_path: "/root/results"
 num_epochs: 200
-batch_size: 32
+batch_size: 64
 
 # Random seed for reproducibility
 seed: 42
