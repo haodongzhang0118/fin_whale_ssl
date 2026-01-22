@@ -37,6 +37,7 @@ uv pip install torch torchvision torchaudio
 # Step 6: Install project dependencies
 echo ""
 echo "[6/9] Installing project dependencies with uv..."
+cd stable-pretraining
 uv pip install -e ".[all]"
 
 # Step 7: Install soundfile
