@@ -5,7 +5,7 @@ Compatible with stable-pretraining framework
 """
 import torch
 import torch.nn as nn
-from .sincNet import SincBlock
+from sincNet import SincBlock
 
 # Batch-RMS Normalization
 class BRN1d(nn.Module):

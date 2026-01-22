@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .sincConv import SincConv
+from sincConv import SincConv
 
 def sinc_kernel_size(sample_rate):
     k = int(sample_rate // 126)
