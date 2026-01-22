@@ -4,7 +4,7 @@
 # Experiment name
 sample_rate: 16000
 exp_name: cpc_finwhale
-data_path: "/root/RESOURCES_SEGLVIK"
+data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
 results_path: "/root/results"
 
 # Random seed for reproducibility
@@ -85,7 +85,7 @@ knn_distance_metric: euclidean  # Distance metric: euclidean, cosine, manhattan
 # WandB configuration (optional)
 wandb:
   project: finwhale-cpc
-  entity: haodoz0118  # UPDATE THIS
+  entity: haodoz0118
   name: ${exp_name}
   save_dir: wandb_logs
 disable_wandb: false  # Set to false to enable WandB logging
