@@ -85,7 +85,7 @@ knn_distance_metric: euclidean  # Distance metric: euclidean, cosine, manhattan
 # WandB configuration (optional)
 wandb:
   project: finwhale-cpc
-  entity: haodoz0118-brown-university  # Your team/organization name
+  entity: haodoz0118-brown-university
   name: ${exp_name}
   save_dir: wandb_logs
 disable_wandb: false  # Set to false to enable WandB logging
