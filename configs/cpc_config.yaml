@@ -85,10 +85,10 @@ knn_distance_metric: euclidean  # Distance metric: euclidean, cosine, manhattan
 # WandB configuration (optional)
 wandb:
   project: finwhale-cpc
-  entity: your-entity  # UPDATE THIS
+  entity: haodoz0118  # UPDATE THIS
   name: ${exp_name}
   save_dir: wandb_logs
-disable_wandb: true  # Set to false to enable WandB logging
+disable_wandb: false  # Set to false to enable WandB logging
 
 # Checkpoint path for resuming (optional)
 ckpt_path: null
