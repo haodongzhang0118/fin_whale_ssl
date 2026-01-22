@@ -6,6 +6,7 @@ sample_rate: 16000
 exp_name: cpc_finwhale
 data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
 results_path: "/root/results"
+num_epochs: 200
 
 # Random seed for reproducibility
 seed: 42
@@ -23,16 +24,14 @@ model:
 # Optimizer configuration
 optim:
   optimizer:
-    _target_: torch.optim.AdamW
-    _partial_: true
+    type: AdamW
     lr: 1.0e-4
     weight_decay: 1.0e-5
     betas: [0.9, 0.999]
   
   scheduler:
-    _target_: torch.optim.lr_scheduler.CosineAnnealingLR
-    _partial_: true
-    T_max: ${trainer.max_epochs}
+    type: CosineAnnealingLR
+    T_max: ${num_epochs}  # Match trainer.max_epochs
     eta_min: 1.0e-6
   
   interval: epoch
