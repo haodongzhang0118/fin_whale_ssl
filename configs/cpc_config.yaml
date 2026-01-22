@@ -1,0 +1,94 @@
+# CPC Configuration for Fin-Whale Audio
+# Based on stable-pretraining framework
+
+# Experiment name
+sample_rate: 16000
+exp_name: cpc_finwhale
+data_path: "/root/RESOURCES_SEGLVIK"
+results_path: "/root/results"
+
+# Random seed for reproducibility
+seed: 42
+
+# Model configuration
+model:
+  sample_rate: ${sample_rate}  # Fin-whale audio sample rate
+  enc_hidden: 512    # Encoder output dimension
+  gru_hidden: 256    # GRU hidden dimension
+  sinc_channels: 512 # SincNet output channels
+  timestep: 12       # Number of future steps to predict
+  tau: 0.07          # Temperature for InfoNCE loss
+  normalize: true    # Whether to normalize features in loss
+
+# Optimizer configuration
+optim:
+  optimizer:
+    _target_: torch.optim.AdamW
+    _partial_: true
+    lr: 1.0e-4
+    weight_decay: 1.0e-5
+    betas: [0.9, 0.999]
+  
+  scheduler:
+    _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+    _partial_: true
+    T_max: ${trainer.max_epochs}
+    eta_min: 1.0e-6
+  
+  interval: epoch
+  frequency: 1
+
+# Data configuration
+data:
+  data_folder: ${data_path}
+  window_duration_sec: 8.0      # Window size in seconds
+  hop_duration_sec: 0.5          # Hop size for sliding window (0.5s for full coverage)
+  sample_rate: ${sample_rate}    # Target sample rate
+  batch_size: 32                 # Batch size (adjust based on GPU memory)
+  num_workers: 4                 # Number of data loading workers
+  shuffle_train: true            # Shuffle training data
+  shuffle_val: false             # Don't shuffle validation data
+
+# Trainer configuration
+trainer:
+  accelerator: gpu
+  devices: 1
+  max_epochs: 200
+  precision: 32
+  num_sanity_val_steps: 2
+  enable_checkpointing: true
+  logger: wandb  # Options: 'wandb', 'tensorboard', 'csv'
+  log_dir: ${results_path}/logs/
+
+# Checkpoint configuration
+checkpoint:
+  monitor: eval/sklearn_probe_f1
+  mode: max
+  save_top_k: 1       # Only save the best checkpoint
+  save_last: true     # Also save the last checkpoint
+  dirpath: ${results_path}/ckpts/
+  filename: best      # Best checkpoint will be saved as "best.ckpt"
+                      # Last checkpoint will be saved as "last.ckpt"
+
+# Evaluation configuration
+use_probes: true  # Enable offline evaluation probes (for labeled validation data)
+
+# Probe configuration
+probe_pca_components: 50  # PCA components for sklearn probe
+
+# KNN configuration
+knn_queue_length: 20000    # Maximum samples to cache in validation queue
+knn_k: 10                  # Number of nearest neighbors
+knn_temperature: 0.07      # Temperature for distance weighting
+knn_distance_metric: euclidean  # Distance metric: euclidean, cosine, manhattan
+
+# WandB configuration (optional)
+wandb:
+  project: finwhale-cpc
+  entity: your-entity  # UPDATE THIS
+  name: ${exp_name}
+  save_dir: wandb_logs
+disable_wandb: true  # Set to false to enable WandB logging
+
+# Checkpoint path for resuming (optional)
+ckpt_path: null
