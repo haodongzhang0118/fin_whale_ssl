@@ -87,6 +87,7 @@ def cpc_forward(self, batch, stage):
             encode_samples[k - 1] = z_t[:, t_samples + k, :]  # [B, D_z]
         
         # Extract context vector at time t
+        # Due to GRU/causal attention, c_t[:, t, :] only contains past information
         context = c_t[:, t_samples, :]  # [B, D_c]
         
         # Predict future representations using learned linear maps W_k
