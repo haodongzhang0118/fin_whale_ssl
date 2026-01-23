@@ -16,7 +16,7 @@ CONFIG_PATH = "configs/cpc_config.yaml"
 
 # Evaluation settings
 SPLIT = "val"  # or "test"
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 NUM_WORKERS = 4
 SAMPLE_RATE = 16000
 WINDOW_DURATION = 8.0
