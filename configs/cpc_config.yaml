@@ -84,7 +84,7 @@ checkpoint:
   mode: max
   save_top_k: 1       # Only save the best checkpoint
   save_last: true     # Also save the last checkpoint
-  dirpath: ${results_path}/ckpts/
+  dirpath: ${results_path}/ckpts_small/
   filename: best      # Best checkpoint will be saved as "best.ckpt"
                       # Last checkpoint will be saved as "last.ckpt"
 
