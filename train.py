@@ -123,16 +123,17 @@ def create_callbacks(cfg):
     if cfg.get("use_probes", True):  # Default to True
         print("Adding evaluation callbacks...")
         
-        # 1. Sklearn-based Linear Probe (offline)
-        # Collects validation embeddings, fits sklearn pipeline, evaluates
+        # 1. Sklearn-based Linear Probe (offline with cross-validation)
+        # Collects validation embeddings, evaluates with cross-validation
         sklearn_probe = SklearnOfflineProbe(
             name="sklearn_probe",
             input="embedding",           # Get embeddings from model output
             target="label",               # Get labels from batch
             n_components=cfg.get("probe_pca_components", 50),  # PCA components
+            n_splits=5,                  # Cross-validation folds
         )
         callbacks.append(sklearn_probe)
-        print(f"  - Added SklearnOfflineProbe (PCA components: {cfg.get('probe_pca_components', 50)})")
+        print(f"  - Added SklearnOfflineProbe (PCA: {cfg.get('probe_pca_components', 50)}, CV folds: 5)")
         
         # 2. KNN Probe (offline)
         # Collects validation embeddings during validation, computes KNN
@@ -197,6 +198,7 @@ def create_datamodule(cfg):
         drop_last=True,
         pin_memory=True,
         seed=cfg.seed,
+        data_fraction=cfg.data.get("train_data_fraction", 1.0),
     )
     
     # Create validation dataloader (supervised, with labels)

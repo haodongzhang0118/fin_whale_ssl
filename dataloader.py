@@ -9,6 +9,7 @@ Key features:
 - Memory efficient (loads audio on-the-fly)
 """
 import os
+import random
 import torch
 import torchaudio
 import soundfile as sf
@@ -176,6 +177,7 @@ def create_dataloaders(
     drop_last=True,
     pin_memory=True,
     seed=42,
+    data_fraction=1.0,
 ):
     """
     Create DataLoader for SEGLVIK dataset
@@ -192,6 +194,7 @@ def create_dataloaders(
         drop_last: Whether to drop last incomplete batch
         pin_memory: Whether to pin memory (faster GPU transfer)
         seed: Random seed
+        data_fraction: Fraction of data to use (0.0-1.0, e.g., 0.1 = 10%, 1.0 = 100%)
     
     Returns:
         DataLoader instance
@@ -217,6 +220,14 @@ def create_dataloaders(
         sample_rate=sample_rate,
         seed=seed
     )
+    
+    # Subsample data if data_fraction < 1.0
+    if data_fraction < 1.0:
+        random.seed(seed)
+        original_size = len(dataset.samples)
+        num_samples = max(1, int(original_size * data_fraction))
+        dataset.samples = random.sample(dataset.samples, num_samples)
+        print(f"   Using {data_fraction*100:.1f}% of data: {num_samples}/{original_size} samples")
     
     # Create DataLoader
     dataloader = DataLoader(

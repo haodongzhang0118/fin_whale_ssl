@@ -6,7 +6,7 @@ backbone_type: transformer  # Options: 'gru', 'transformer'
 
 # Experiment name
 sample_rate: 16000
-exp_name: cpc_finwhale
+exp_name: cpc_finwhale_smalldata
 data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
 results_path: "/root/results"
 
@@ -65,6 +65,7 @@ data:
   num_workers: 4                 # Number of data loading workers
   shuffle_train: true            # Shuffle training data
   shuffle_val: false             # Don't shuffle validation data
+  train_data_fraction: 0.1       # Fraction of training data to use (0.1 = 10%, 1.0 = 100%)
 
 # Trainer configuration
 trainer:
