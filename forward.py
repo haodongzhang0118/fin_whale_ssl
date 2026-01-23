@@ -60,15 +60,6 @@ def cpc_forward(self, batch, stage):
         seq_len = z_t.size(1)
         timestep = self.timestep
         
-        # Need enough frames for future prediction
-        if seq_len <= timestep:
-            # Fallback: just return embeddings without loss
-            # Use global average pooling for fixed-size embedding
-            out["embedding"] = c_t.mean(dim=1)  # [B, D_c]
-            if "label" in batch:
-                out["label"] = batch["label"]
-            return out
-        
         # Randomly sample a time step t (leave room for future predictions)
         t_samples = torch.randint(
             low=0, 
