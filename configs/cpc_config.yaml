@@ -2,7 +2,7 @@
 # Based on stable-pretraining framework
 
 # Backbone type: 'gru' or 'transformer'
-backbone_type: transformer  # Options: 'gru', 'transformer'
+backbone_type: gru  # Options: 'gru', 'transformer'
 
 # Experiment name
 sample_rate: 16000
