@@ -10,7 +10,7 @@ from eval import evaluate_checkpoint
 # =============================================================================
 
 # Paths
-CHECKPOINT_PATH = "/root/results/ckpts/best.ckpt"
+CHECKPOINT_PATH = "/root/results/ckpts/best-v2.ckpt"
 DATA_FOLDER = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
 CONFIG_PATH = "configs/cpc_config.yaml"
 

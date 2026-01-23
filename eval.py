@@ -53,10 +53,6 @@ def extract_embeddings(module, loader, device, verbose=True):
             Xs.append(emb.cpu().numpy())
             ys.append(batch["label"].cpu().numpy())
             groups += list(batch["file_name"])
-            
-            # Progress
-            if verbose and (batch_idx + 1) % 10 == 0:
-                print(f"   Processed {batch_idx + 1}/{len(loader)} batches...")
     
     # Concatenate
     X = np.concatenate(Xs, axis=0)  # [N, D]
