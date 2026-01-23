@@ -65,6 +65,14 @@ class SklearnOfflineProbe(Callback):
     
     def on_validation_epoch_end(self, trainer, pl_module):
         """Evaluate using cross-validation (same as eval.py)"""
+        # Skip evaluation during sanity check
+        if trainer.sanity_checking:
+            logging.info(f"{self.name}: Skipping evaluation during sanity check")
+            self.X_val = []
+            self.y_val = []
+            self.groups_val = []
+            return
+        
         if len(self.X_val) == 0:
             logging.warning(f"{self.name}: No validation data collected")
             return

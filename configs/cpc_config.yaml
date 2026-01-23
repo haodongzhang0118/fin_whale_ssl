@@ -65,7 +65,7 @@ data:
   num_workers: 4                 # Number of data loading workers
   shuffle_train: true            # Shuffle training data
   shuffle_val: false             # Don't shuffle validation data
-  train_data_fraction: 0.1       # Fraction of training data to use (0.1 = 10%, 1.0 = 100%)
+  train_data_fraction: 0.01       # Fraction of training data to use (0.1 = 10%, 1.0 = 100%)
 
 # Trainer configuration
 trainer:
