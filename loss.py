@@ -38,6 +38,9 @@ class CPCLoss(nn.Module):
         """
         timestep, B, D = preds.shape
         
+        # ⭐ KEY: Apply dimension scaling (like ssl-whales)
+        scale = 1.0 / torch.sqrt(torch.tensor(D, dtype=preds.dtype, device=preds.device))
+        
         # Normalize if requested
         if self.normalize:
             preds = F.normalize(preds, dim=-1)
@@ -51,8 +54,8 @@ class CPCLoss(nn.Module):
             target_i = targets[i]  # [B, D]
             
             # Compute similarity matrix: [B, D] @ [D, B] -> [B, B]
-            # Each row corresponds to one sample's prediction vs all targets
-            logits = torch.mm(target_i, pred_i.t()) / self.tau
+            # Apply dimension scaling before temperature
+            logits = torch.mm(target_i, pred_i.t()) * scale / self.tau
             
             # Diagonal elements are positive pairs
             labels = torch.arange(B, device=preds.device)
