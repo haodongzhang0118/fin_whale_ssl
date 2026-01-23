@@ -60,7 +60,7 @@ huggingface-cli login
 # Step 10: Download dataset
 echo ""
 echo "[10/10] Downloading dataset..."
-cd /root/
+cd ../
 apt install git-lfs
 git lfs install
 

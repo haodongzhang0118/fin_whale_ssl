@@ -9,7 +9,7 @@ import stable_pretraining as spt
 from omegaconf import OmegaConf
 from lightning.pytorch.loggers import WandbLogger, CSVLogger
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
-from backbone import cpc_backbone
+from backbone import cpc_backbone, cpc_backbone_transformer
 from loss import CPCLoss
 from forward import cpc_forward
 from dataloader import create_dataloaders, create_supervised_dataloaders
@@ -27,17 +27,37 @@ def create_cpc_module(cfg):
     Returns:
         spt.Module instance configured for CPC
     """
-    # Create backbone
-    backbone = cpc_backbone(
-        sample_rate=cfg.model.sample_rate,
-        enc_hidden=cfg.model.enc_hidden,
-        gru_hidden=cfg.model.gru_hidden,
-        sinc_channels=cfg.model.sinc_channels
-    )
+    # Create backbone based on backbone_type
+    backbone_type = cfg.get('backbone_type', 'gru')
+    print(f"Creating CPC module with {backbone_type.upper()} backbone...")
+    
+    if backbone_type == 'transformer':
+        backbone = cpc_backbone_transformer(
+            sample_rate=cfg.model.sample_rate,
+            enc_hidden=cfg.model.enc_hidden,
+            transformer_hidden=cfg.model.transformer_hidden,
+            sinc_channels=cfg.model.sinc_channels,
+            num_layers=cfg.model.num_layers,
+            num_heads=cfg.model.num_heads,
+            mlp_ratio=cfg.model.mlp_ratio,
+            drop_path=cfg.model.drop_path,
+            attn_drop=cfg.model.attn_drop,
+            proj_drop=cfg.model.proj_drop,
+            pos_encoding=cfg.model.pos_encoding,
+        )
+        context_dim = cfg.model.transformer_hidden
+    else:  # gru
+        backbone = cpc_backbone(
+            sample_rate=cfg.model.sample_rate,
+            enc_hidden=cfg.model.enc_hidden,
+            gru_hidden=cfg.model.gru_hidden,
+            sinc_channels=cfg.model.sinc_channels
+        )
+        context_dim = cfg.model.gru_hidden
     
     # Create prediction heads (one per future time step)
     Wk = nn.ModuleList([
-        nn.Linear(cfg.model.gru_hidden, cfg.model.enc_hidden) 
+        nn.Linear(context_dim, cfg.model.enc_hidden) 
         for _ in range(cfg.model.timestep)
     ])
     
