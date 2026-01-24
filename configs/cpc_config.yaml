@@ -94,7 +94,7 @@ checkpoint:
 use_probes: true  # Enable offline evaluation probes (for labeled validation data)
 
 # Probe configuration
-probe_pca_components: 50  # PCA components for sklearn probe
+probe_pca_components: 128  # PCA components for sklearn probe
 
 # KNN configuration
 knn_queue_length: 20000    # Maximum samples to cache in validation queue
