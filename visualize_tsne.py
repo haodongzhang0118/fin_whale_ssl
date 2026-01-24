@@ -180,7 +180,6 @@ def main():
         data_folder=data_folder,
         split='val',
         window_duration_sec=cfg.data.window_duration_sec,
-        hop_duration_sec=cfg.data.hop_duration_sec,
         sample_rate=cfg.sample_rate,
         batch_size=64,
         num_workers=cfg.data.num_workers,
