@@ -71,13 +71,8 @@ def create_cpc_module(cfg, trainer):
     # Get scheduler parameters and compute total_steps
     total_steps = trainer.estimated_stepping_batches
     peak_step_config = cfg.optim.scheduler.peak_step
-    
-    # Convert peak_step to absolute steps if it's a fraction
-    if peak_step_config < 1:
-        peak_step = max(1, int(peak_step_config * total_steps))
-    else:
-        peak_step = int(peak_step_config)
-    
+    peak_step = max(1, int(peak_step_config * total_steps))
+    start_factor = cfg.optim.scheduler.start_factor * cfg.optim.optimizer.lr
     print(f"Scheduler: total_steps={total_steps}, warmup_steps={peak_step} ({peak_step/total_steps*100:.1f}%)")
     
     # Create stable-pretraining Module
@@ -93,7 +88,7 @@ def create_cpc_module(cfg, trainer):
                 "type": cfg.optim.scheduler.type,
                 "total_steps": total_steps,
                 "peak_step": peak_step,  # Already converted to absolute steps
-                "start_factor": cfg.optim.scheduler.start_factor,
+                "start_factor": start_factor,
                 "end_lr": cfg.optim.scheduler.end_lr,
             },
             "interval": cfg.optim.interval,  # Note: cfg.optim.interval, not cfg.optim.scheduler.interval
