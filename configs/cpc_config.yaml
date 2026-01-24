@@ -17,7 +17,7 @@ results_path: "/root/results"
 timestep: 12
 hidden_dim: 256
 num_epochs: 10
-batch_size: 32
+batch_size: 128
 lr: 5.0e-5
 
 # Random seed for reproducibility
@@ -29,7 +29,7 @@ model:
   enc_hidden: 512    # Encoder output dimension
   sinc_channels: 512 # SincNet output channels
   timestep: ${timestep}       # Number of future steps to predict
-  tau: 0.07          # Temperature for InfoNCE loss
+  tau: 0.05          # Temperature for InfoNCE loss
   normalize: true   # Whether to normalize features in loss (ssl-whales uses false)
   
   # GRU-specific parameters (used when backbone_type: gru)
