@@ -9,7 +9,6 @@ import stable_pretraining as spt
 from omegaconf import OmegaConf
 from lightning.pytorch.loggers import WandbLogger, CSVLogger
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
-from stable_pretraining.optim.lr_scheduler import LinearWarmupCosineAnnealing
 from backbone import cpc_backbone, cpc_backbone_transformer
 from loss import CPCLoss
 from forward import cpc_forward
@@ -19,7 +18,7 @@ from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
 
 
-def create_cpc_module(cfg):
+def create_cpc_module(cfg, trainer):
     """
     Create CPC module for stable-pretraining
     
@@ -29,9 +28,6 @@ def create_cpc_module(cfg):
     Returns:
         spt.Module instance configured for CPC
     """
-    # Store warmup_fraction for later use (OmegaConf doesn't support storing functions)
-    warmup_fraction = cfg.optim.get("warmup_fraction", None)
-    
     # Create backbone based on backbone_type
     backbone_type = cfg.get('backbone_type', 'gru')
     print(f"Creating CPC module with {backbone_type.upper()} backbone...")
@@ -72,6 +68,18 @@ def create_cpc_module(cfg):
         normalize=cfg.model.normalize
     )
     
+    # Get scheduler parameters and compute total_steps
+    total_steps = trainer.estimated_stepping_batches
+    peak_step_config = cfg.optim.scheduler.peak_step
+    
+    # Convert peak_step to absolute steps if it's a fraction
+    if peak_step_config < 1:
+        peak_step = max(1, int(peak_step_config * total_steps))
+    else:
+        peak_step = int(peak_step_config)
+    
+    print(f"Scheduler: total_steps={total_steps}, warmup_steps={peak_step} ({peak_step/total_steps*100:.1f}%)")
+    
     # Create stable-pretraining Module
     module = spt.Module(
         backbone=backbone,
@@ -79,30 +87,20 @@ def create_cpc_module(cfg):
         Wk=Wk,
         cpc_loss=cpc_loss,
         timestep=cfg.model.timestep,
-        optim=cfg.optim,
+        optim={
+            "optimizer": cfg.optim.optimizer,
+            "scheduler": {
+                "type": cfg.optim.scheduler.type,
+                "total_steps": total_steps,
+                "peak_step": peak_step,  # Already converted to absolute steps
+                "start_factor": cfg.optim.scheduler.start_factor,
+                "end_lr": cfg.optim.scheduler.end_lr,
+            },
+            "interval": cfg.optim.interval,  # Note: cfg.optim.interval, not cfg.optim.scheduler.interval
+            "frequency": cfg.optim.frequency,
+        },
         hparams={"model": cfg.model},
     )
-    
-    # Override scheduler config if warmup_fraction is specified
-    # This must be done after module creation since OmegaConf doesn't support storing functions
-    if warmup_fraction is not None and isinstance(cfg.optim.scheduler, str):
-        print(f"Configuring scheduler with {warmup_fraction*100:.0f}% warmup...")
-        
-        # Create a callable that will receive optimizer and module at runtime
-        def scheduler_factory(optimizer, module):
-            total_steps = getattr(module.trainer, "estimated_stepping_batches", 1000)
-            peak_step = max(1, int(warmup_fraction * total_steps))
-            print(f"  Total steps: {total_steps}, Warmup steps: {peak_step}")
-            return LinearWarmupCosineAnnealing(
-                optimizer,
-                total_steps=total_steps,
-                peak_step=peak_step,
-                start_factor=0.01,
-                end_lr=0.0
-            )
-        
-        # Replace the scheduler in module's optim (not in cfg)
-        module.optim["scheduler"] = scheduler_factory
     
     return module
 
@@ -360,10 +358,6 @@ def main(config_path="configs/cpc_config.yaml"):
     if cfg.get("seed"):
         pl.seed_everything(cfg.seed, workers=True)
     
-    # Create components
-    print("Creating module...")
-    module = create_cpc_module(cfg)
-    
     print("Creating datamodule...")
     datamodule = create_datamodule(cfg)
     
@@ -372,6 +366,10 @@ def main(config_path="configs/cpc_config.yaml"):
     
     print("Creating trainer...")
     trainer = create_trainer(cfg, callbacks)
+
+    # Create components
+    print("Creating module...")
+    module = create_cpc_module(cfg, trainer)
     
     # Create manager and start training
     print("Creating manager...")
