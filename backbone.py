@@ -62,27 +62,6 @@ class BRN1d(nn.Module):
         
         return y
 
-
-class LayerNorm1d(nn.Module):
-    """
-    LayerNorm wrapper for Conv1d outputs
-    Handles the transpose to apply LayerNorm correctly on channel dimension
-    
-    Input: [B, C, T] from Conv1d
-    Output: [B, C, T]
-    """
-    def __init__(self, num_features, eps=1e-5):
-        super().__init__()
-        self.norm = nn.LayerNorm(num_features, eps=eps)
-    
-    def forward(self, x):
-        # x: [B, C, T] from Conv1d
-        x = x.transpose(1, 2)  # [B, T, C]
-        x = self.norm(x)       # Normalize over C dimension
-        x = x.transpose(1, 2)  # [B, C, T]
-        return x
-
-
 class CPCEncoder(nn.Module):
     """
     Encoder network: stacked Conv1d + BRN + ReLU
@@ -98,27 +77,27 @@ class CPCEncoder(nn.Module):
         self.encoder = nn.Sequential(
             # Layer 1: stride=5
             nn.Conv1d(in_chan, 512, kernel_size=8, stride=5, padding=2, bias=False),
-            LayerNorm1d(512),  # LayerNorm for Conv1d
+            BRN1d(512),
             nn.ReLU(inplace=True),
             # Layer 2: stride=3
             nn.Conv1d(512, 512, kernel_size=4, stride=3, padding=1, bias=False),
-            LayerNorm1d(512),
+            BRN1d(512),
             nn.ReLU(inplace=True),
             # Layer 3: stride=2
             nn.Conv1d(512, 512, kernel_size=3, stride=2, padding=1, bias=False),
-            LayerNorm1d(512),
+            BRN1d(512),
             nn.ReLU(inplace=True),
             # Layer 4: stride=2
             nn.Conv1d(512, 512, kernel_size=3, stride=2, padding=1, bias=False),
-            LayerNorm1d(512),
+            BRN1d(512),
             nn.ReLU(inplace=True),
             # Layer 5: stride=1
             nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            LayerNorm1d(512),
+            BRN1d(512),
             nn.ReLU(inplace=True),
             # Layer 6: stride=1
             nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            LayerNorm1d(512),
+            BRN1d(512),
             nn.ReLU(inplace=True),
         )
 

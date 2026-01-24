@@ -27,7 +27,7 @@ class SklearnOfflineProbe(Callback):
         # Note: Features are already L2-normalized in backbone.extract_embedding()
         self.pipeline = make_pipeline(
             PCA(n_components=n_components, whiten=True, random_state=42),
-            LogisticRegression(max_iter=2000, class_weight='balanced')  # Added class_weight for imbalanced data
+            LogisticRegression(max_iter=2000)  # Added class_weight for imbalanced data
         )
         
         # Buffers for collecting data
