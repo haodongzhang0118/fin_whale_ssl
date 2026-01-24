@@ -18,7 +18,7 @@ from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
 
 
-def create_cpc_module(cfg, trainer):
+def create_cpc_module(cfg):
     """
     Create CPC module for stable-pretraining
     
@@ -68,13 +68,6 @@ def create_cpc_module(cfg, trainer):
         normalize=cfg.model.normalize
     )
     
-    # Get scheduler parameters and compute total_steps
-    total_steps = trainer.estimated_stepping_batches
-    peak_step_config = cfg.optim.scheduler.peak_step
-    peak_step = max(1, int(peak_step_config * total_steps))
-    start_factor = cfg.optim.scheduler.start_factor * cfg.optim.optimizer.lr
-    print(f"Scheduler: total_steps={total_steps}, warmup_steps={peak_step} ({peak_step/total_steps*100:.1f}%)")
-    
     # Create stable-pretraining Module
     module = spt.Module(
         backbone=backbone,
@@ -82,18 +75,7 @@ def create_cpc_module(cfg, trainer):
         Wk=Wk,
         cpc_loss=cpc_loss,
         timestep=cfg.model.timestep,
-        optim={
-            "optimizer": cfg.optim.optimizer,
-            "scheduler": {
-                "type": cfg.optim.scheduler.type,
-                "total_steps": total_steps,
-                "peak_step": peak_step,  # Already converted to absolute steps
-                "start_factor": start_factor,
-                "end_lr": cfg.optim.scheduler.end_lr,
-            },
-            "interval": cfg.optim.interval,  # Note: cfg.optim.interval, not cfg.optim.scheduler.interval
-            "frequency": cfg.optim.frequency,
-        },
+        optim=cfg.optim,
         hparams={"model": cfg.model},
     )
     

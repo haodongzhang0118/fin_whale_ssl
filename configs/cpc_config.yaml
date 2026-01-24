@@ -53,12 +53,12 @@ optim:
     weight_decay: 1.0e-5
     betas: [0.9, 0.999]
   
-  # Scheduler with warmup
-  scheduler: 
+  scheduler:
     type: LinearWarmupCosineAnnealing
-    peak_step: 0.05      # Warmup for 5% of total steps
-    start_factor: 0.01   # Start from 1% of base lr
-    end_lr: 0.0          # Decay to zero
+    peak_step: 0.05      # 比例
+    start_factor: 0.01
+    end_lr: 0.0
+  
   interval: step
   frequency: 1
 
