@@ -18,7 +18,7 @@ timestep: 12
 hidden_dim: 256
 num_epochs: 60
 batch_size: 128
-lr: 1.0e-4
+lr: 1.0e-5
 
 # Random seed for reproducibility
 seed: 42
