@@ -70,11 +70,12 @@ class SEGLVIKDataset(Dataset):
         if not os.path.exists(self.audio_dir):
             raise FileNotFoundError(f"Audio folder not found: {self.audio_dir}")
         
-        # Load audio files
-        self.audio_files = sorted(glob(os.path.join(self.audio_dir, "*.flac")))
+        # Load audio files (support both .flac and .wav)
+        self.audio_files = sorted(glob(os.path.join(self.audio_dir, "*.flac")) + 
+                                   glob(os.path.join(self.audio_dir, "*.wav")))
         
         if len(self.audio_files) == 0:
-            raise ValueError(f"No .flac files found in {self.audio_dir}")
+            raise ValueError(f"No .flac or .wav files found in {self.audio_dir}")
         
         print(f"\n{'='*60}")
         print(f"SEGLVIK Dataset - {split.upper()}")
@@ -361,8 +362,9 @@ class SEGLVIKSupervisedDataset(Dataset):
         self.annotations = pd.read_csv(csv_path)
         print(f"Annotations loaded: {len(self.annotations)} detections")
         
-        # Load audio files
-        audio_files = glob(os.path.join(self.audio_dir, "*.flac"))
+        # Load audio files (support both .flac and .wav)
+        audio_files = glob(os.path.join(self.audio_dir, "*.flac")) + \
+                      glob(os.path.join(self.audio_dir, "*.wav"))
         self.audio_file_dict = {os.path.basename(f): f for f in audio_files}
         print(f"Audio files: {len(self.audio_file_dict)}")
         
@@ -385,11 +387,20 @@ class SEGLVIKSupervisedDataset(Dataset):
         
         # Combine samples
         self.samples = []
-        for i in range(min(len(pos_samples), len(neg_samples))):
+        num_pairs = min(len(pos_samples), len(neg_samples))
+        for i in range(num_pairs):
             self.samples.append((pos_samples[i], 1.0))  # Positive
             self.samples.append((neg_samples[i], 0.0))   # Negative
         
-        print(f"Total samples: {len(self.samples)} ({num_pos} pos + {num_neg} neg)")
+        # Calculate actual usage
+        used_pos = num_pairs
+        used_neg = num_pairs
+        discarded_pos = len(pos_samples) - used_pos
+        discarded_neg = len(neg_samples) - used_neg
+        
+        print(f"Total samples: {len(self.samples)} ({used_pos} pos + {used_neg} neg)")
+        if discarded_pos > 0 or discarded_neg > 0:
+            print(f"  ⚠️  Discarded: {discarded_pos} pos, {discarded_neg} neg (to maintain balance)")
         print(f"{'='*60}\n")
     
     def _generate_pos_samples(self, confidence_threshold=None, snr_threshold=None):
@@ -440,21 +451,34 @@ class SEGLVIKSupervisedDataset(Dataset):
     def _generate_neg_samples(self, num_neg_samples):
         """Generate negative samples (without whale pulses)"""
         print(f"\nGenerating negative samples...")
+        print(f"  Target: {num_neg_samples} samples")
+        
+        # Set independent random seed for negative sampling
+        # This ensures consistent negative sample generation regardless of positive sample count
+        import random
+        random.seed(self.seed + 1000)  # Different seed from positive samples
+        torch.manual_seed(self.seed + 1000)
         
         neg_samples = []
         files_to_use = list(self.audio_file_dict.keys())
         
-        samples_per_file = num_neg_samples // len(files_to_use)
-        remainder = num_neg_samples % len(files_to_use)
+        # Strategy: Try to generate a fixed number of samples per file
+        # This maximizes dataset utilization regardless of num_neg_samples
+        attempts_per_file = 100  # Fixed attempt count per file
         
-        for file_idx, filename in enumerate(tqdm(files_to_use, desc="  Processing files")):
+        skipped_files = 0
+        failed_attempts = 0
+        
+        for filename in tqdm(files_to_use, desc="  Processing files"):
             file_path = self.audio_file_dict[filename]
             audio_info = sf.info(file_path)
             audio_length = audio_info.frames
             
-            # Skip very short files
             window_size = int(self.window_duration_sec * self.original_sample_rate)
-            if audio_length < window_size * 2:
+            
+            # Skip files shorter than window size
+            if audio_length < window_size:
+                skipped_files += 1
                 continue
             
             # Get detections for this file
@@ -464,12 +488,20 @@ class SEGLVIKSupervisedDataset(Dataset):
                 (file_detections["End Time (s)"] * self.original_sample_rate).astype(int)
             ))
             
-            # Generate negative samples for this file
-            num_samples_this_file = samples_per_file
-            if file_idx < remainder:
-                num_samples_this_file += 1
+            # Calculate available space (total length - pulse regions)
+            pulse_coverage = sum(end - start for start, end in detections)
+            available_space = audio_length - pulse_coverage
             
-            for _ in range(num_samples_this_file):
+            # Skip if insufficient space for even one window
+            if available_space < window_size:
+                skipped_files += 1
+                continue
+            
+            # Try to generate samples from this file
+            consecutive_failures = 0
+            samples_from_this_file = 0
+            
+            for _ in range(attempts_per_file):
                 start_idx, end_idx = get_random_negative_part(
                     signal_length=audio_length,
                     detections=detections,
@@ -479,8 +511,32 @@ class SEGLVIKSupervisedDataset(Dataset):
                 
                 if start_idx is not None:
                     neg_samples.append((file_path, (start_idx, end_idx)))
+                    samples_from_this_file += 1
+                    consecutive_failures = 0
+                else:
+                    failed_attempts += 1
+                    consecutive_failures += 1
+                    # Stop trying this file if consistently failing
+                    if consecutive_failures >= 20:
+                        break
+            
+            # Mark as skipped if we got very few samples
+            if samples_from_this_file < 5:
+                skipped_files += 1
         
-        print(f"  Generated {len(neg_samples)} negative samples")
+        print(f"  Generated {len(neg_samples)} negative samples from all files")
+        print(f"  Skipped {skipped_files} files (too short or insufficient space)")
+        print(f"  Failed attempts: {failed_attempts}")
+        
+        # Subsample or use all depending on what we got
+        if len(neg_samples) > num_neg_samples:
+            # Randomly sample to target size
+            random.seed(self.seed + 1000)
+            neg_samples = random.sample(neg_samples, num_neg_samples)
+            print(f"  Randomly sampled down to {num_neg_samples} samples")
+        elif len(neg_samples) < num_neg_samples:
+            print(f"  ⚠️  Only generated {len(neg_samples)}/{num_neg_samples} samples (dataset limitation)")
+        
         return neg_samples, len(neg_samples)
     
     def _generate_shifts(self, shift_amount, signal_length, start_pulse, end_pulse):

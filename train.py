@@ -187,7 +187,7 @@ def create_datamodule(cfg):
     # Create training dataloader (unsupervised)
     print("Creating training dataloader...")
     train_loader = create_dataloaders(
-        data_folder=cfg.data.data_folder,
+        data_folder=cfg.data.train_data_folder,  # Use train_data_folder
         split="train",
         window_duration_sec=cfg.data.window_duration_sec,
         hop_duration_sec=cfg.data.hop_duration_sec,
@@ -204,7 +204,7 @@ def create_datamodule(cfg):
     # Create validation dataloader (supervised, with labels)
     print("\nCreating validation dataloader...")
     val_loader = create_supervised_dataloaders(
-        data_folder=cfg.data.data_folder,
+        data_folder=cfg.data.val_data_folder,  # Use val_data_folder
         split="val",
         window_duration_sec=cfg.data.window_duration_sec,
         sample_rate=cfg.data.sample_rate,

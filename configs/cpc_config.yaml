@@ -7,7 +7,11 @@ backbone_type: gru  # Options: 'gru', 'transformer'
 # Experiment name
 sample_rate: 16000
 exp_name: cpc_finwhale_smalldata
-data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
+
+# Data paths
+train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
+val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"  # Can be different from train
+
 results_path: "/root/results"
 
 timestep: 12
@@ -54,7 +58,8 @@ optim:
 
 # Data configuration
 data:
-  data_folder: ${data_path}
+  train_data_folder: ${train_data_path}  # Training data path
+  val_data_folder: ${val_data_path}      # Validation data path
   window_duration_sec: 8.0      # Window size in seconds
   hop_duration_sec: 4.0          # Hop size: 4s = 50% overlap
   sample_rate: ${sample_rate}    # Target sample rate
