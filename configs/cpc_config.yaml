@@ -17,7 +17,7 @@ results_path: "/root/results"
 timestep: 12
 hidden_dim: 256
 num_epochs: 10
-batch_size: 64
+batch_size: 32
 lr: 5.0e-5
 
 # Random seed for reproducibility
