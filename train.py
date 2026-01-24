@@ -18,7 +18,7 @@ from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
 
 
-def create_cpc_module(cfg):
+def create_cpc_module(cfg, datamodule):
     """
     Create CPC module for stable-pretraining
     
@@ -68,6 +68,8 @@ def create_cpc_module(cfg):
         normalize=cfg.model.normalize
     )
     
+    total_steps = len(datamodule.train_dataloader())
+    peak_step = max(1, int(cfg.optim.scheduler.peak_step * total_steps))
     # Create stable-pretraining Module
     module = spt.Module(
         backbone=backbone,
@@ -75,7 +77,18 @@ def create_cpc_module(cfg):
         Wk=Wk,
         cpc_loss=cpc_loss,
         timestep=cfg.model.timestep,
-        optim=cfg.optim,
+        optim={
+            "optimizer": cfg.optim.optimizer,
+            "scheduler": {
+                "type": cfg.optim.scheduler.type,
+                "total_steps": total_steps,
+                "peak_step": peak_step,
+                "start_factor": cfg.optim.scheduler.start_factor * cfg.optim.optimizer.lr,
+                "end_lr": cfg.optim.scheduler.end_lr,
+            },
+            "interval": cfg.optim.interval,
+            "frequency": cfg.optim.frequency,
+        },
         hparams={"model": cfg.model},
     )
     
