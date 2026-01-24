@@ -29,8 +29,8 @@ model:
   enc_hidden: 512    # Encoder output dimension
   sinc_channels: 512 # SincNet output channels
   timestep: ${timestep}       # Number of future steps to predict
-  tau: 0.07          # Temperature for InfoNCE loss
-  normalize: false   # Whether to normalize features in loss (ssl-whales uses false)
+  tau: 1.0          # Temperature for InfoNCE loss
+  normalize: true   # Whether to normalize features in loss (ssl-whales uses false)
   
   # GRU-specific parameters (used when backbone_type: gru)
   gru_hidden: ${hidden_dim}    # GRU hidden dimension
