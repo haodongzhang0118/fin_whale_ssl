@@ -14,6 +14,7 @@ from loss import CPCLoss
 from forward import cpc_forward
 from dataloader import create_dataloaders, create_supervised_dataloaders
 from SklearnOfflineProbe import SklearnOfflineProbe
+from OfflineProbe import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
 
 
@@ -93,13 +94,22 @@ def create_callbacks(cfg):
     """
     callbacks = []
     
+    # Dynamically set checkpoint monitor based on probe_type
+    probe_type = cfg.get("probe_type", "spt")
+    if probe_type == "spt":
+        monitor_metric = "eval/linear_probe_f1"
+    elif probe_type == "sklearn":
+        monitor_metric = "eval/sklearn_probe_f1"
+    else:
+        monitor_metric = cfg.checkpoint.monitor  # Fallback to config value
+    
     # Model checkpoint
     # Saves two checkpoints:
     # 1. best.ckpt - Best model based on monitored metric
     # 2. last.ckpt - Last epoch checkpoint
     if cfg.trainer.enable_checkpointing:
         checkpoint_callback = ModelCheckpoint(
-            monitor=cfg.checkpoint.monitor,
+            monitor=monitor_metric,
             mode=cfg.checkpoint.mode,
             save_top_k=cfg.checkpoint.save_top_k,
             save_last=cfg.checkpoint.save_last,
@@ -110,7 +120,7 @@ def create_callbacks(cfg):
         )
         callbacks.append(checkpoint_callback)
         print(f"Checkpointing enabled:")
-        print(f"  - Monitoring: {cfg.checkpoint.monitor} ({cfg.checkpoint.mode})")
+        print(f"  - Monitoring: {monitor_metric} ({cfg.checkpoint.mode})")
         print(f"  - Save directory: {cfg.checkpoint.dirpath}")
         print(f"  - Best checkpoint: {cfg.checkpoint.filename}.ckpt")
         print(f"  - Last checkpoint: last.ckpt")
@@ -123,17 +133,37 @@ def create_callbacks(cfg):
     if cfg.get("use_probes", True):  # Default to True
         print("Adding evaluation callbacks...")
         
-        # 1. Sklearn-based Linear Probe (offline with cross-validation)
-        # Collects validation embeddings, evaluates with cross-validation
-        sklearn_probe = SklearnOfflineProbe(
-            name="sklearn_probe",
-            input="embedding",           # Get embeddings from model output
-            target="label",               # Get labels from batch
-            n_components=cfg.get("probe_pca_components", 50),  # PCA components
-            n_splits=5,                  # Cross-validation folds
-        )
-        callbacks.append(sklearn_probe)
-        print(f"  - Added SklearnOfflineProbe (PCA: {cfg.get('probe_pca_components', 50)}, CV folds: 5)")
+        # 1. Linear Probe - Choose implementation
+        probe_type = cfg.get("probe_type", "spt")  # Options: 'sklearn', 'spt'
+        
+        if probe_type == "spt":
+            # stable-pretraining style offline probe (no PCA, pure linear)
+            linear_probe = OfflineProbe(
+                name="linear_probe",
+                input="embedding",
+                target="label",
+                input_dim=cfg.model.get("gru_hidden", 256),
+                num_classes=2,
+                train_epochs=cfg.get("probe_train_epochs", 100),
+                lr=cfg.get("probe_lr", 0.1),
+                weight_decay=cfg.get("probe_weight_decay", 0.0),
+                optimizer=cfg.get("probe_optimizer", "lars"),
+                metrics=None,
+            )
+            callbacks.append(linear_probe)
+            print(f"  - Added OfflineProbe (stable-pretraining style)")
+            print(f"    Epochs: {cfg.get('probe_train_epochs', 100)}, LR: {cfg.get('probe_lr', 0.1)}, Optimizer: {cfg.get('probe_optimizer', 'lars')}")
+        else:
+            # Sklearn-based probe (uses PCA + cross-validation)
+            sklearn_probe = SklearnOfflineProbe(
+                name="sklearn_probe",
+                input="embedding",           # Get embeddings from model output
+                target="label",               # Get labels from batch
+                n_components=cfg.get("probe_pca_components", 50),  # PCA components
+                n_splits=5,                  # Cross-validation folds
+            )
+            callbacks.append(sklearn_probe)
+            print(f"  - Added SklearnOfflineProbe (PCA: {cfg.get('probe_pca_components', 50)}, CV folds: 5)")
         
         # 2. KNN Probe (offline)
         # Collects validation embeddings during validation, computes KNN

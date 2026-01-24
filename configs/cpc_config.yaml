@@ -2,7 +2,7 @@
 # Based on stable-pretraining framework
 
 # Backbone type: 'gru' or 'transformer'
-backbone_type: transformer  # Options: 'gru', 'transformer'
+backbone_type: gru  # Options: 'gru', 'transformer'
 
 # Experiment name
 sample_rate: 16000
@@ -82,7 +82,7 @@ trainer:
 
 # Checkpoint configuration
 checkpoint:
-  monitor: eval/sklearn_probe_f1
+  monitor: eval/linear_probe_f1  # Auto-set based on probe_type: 'linear_probe_f1' for spt, 'sklearn_probe_f1' for sklearn
   mode: max
   save_top_k: 1       # Only save the best checkpoint
   save_last: true     # Also save the last checkpoint
@@ -94,6 +94,13 @@ checkpoint:
 use_probes: true  # Enable offline evaluation probes (for labeled validation data)
 
 # Probe configuration
+probe_type: spt  # Options: 'sklearn' (PCA+CV) or 'spt' (stable-pretraining style, no PCA)
+probe_train_epochs: 100  # Training epochs for linear probe
+probe_lr: 0.1  # Learning rate (0.1 is standard for LARS optimizer)
+probe_weight_decay: 0.0  # Weight decay (0.0 is standard for SSL probes)
+probe_optimizer: lars  # Optimizer: 'lars', 'adamw', 'adam', 'sgd'
+
+# Sklearn probe settings (only used if probe_type='sklearn')
 probe_pca_components: 50  # PCA components for sklearn probe
 
 # KNN configuration
