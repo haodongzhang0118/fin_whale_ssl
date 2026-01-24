@@ -78,27 +78,33 @@ class CPCEncoder(nn.Module):
         self.encoder = nn.Sequential(
             # Layer 1: stride=5
             nn.Conv1d(in_chan, 512, kernel_size=8, stride=5, padding=2, bias=False),
-            BRN1d(512),
+            #BRN1d(512),
+            nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
             # Layer 2: stride=3
             nn.Conv1d(512, 512, kernel_size=4, stride=3, padding=1, bias=False),
-            BRN1d(512),
+            #BRN1d(512),
+            nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
             # Layer 3: stride=2
             nn.Conv1d(512, 512, kernel_size=3, stride=2, padding=1, bias=False),
-            BRN1d(512),
+            #BRN1d(512),
+            nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
             # Layer 4: stride=2
             nn.Conv1d(512, 512, kernel_size=3, stride=2, padding=1, bias=False),
-            BRN1d(512),
+            #BRN1d(512),
+            nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
             # Layer 5: stride=1
             nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(512),
+            #BRN1d(512),
+            nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
             # Layer 6: stride=1
             nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(512),
+            #BRN1d(512),
+            nn.BatchNorm1d(512),
             nn.ReLU(inplace=True),
         )
 
