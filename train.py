@@ -346,7 +346,7 @@ def main(config_path="configs/cpc_config.yaml"):
 
     # Create components
     print("Creating module...")
-    module = create_cpc_module(cfg, trainer)
+    module = create_cpc_module(cfg)
     
     # Create manager and start training
     print("Creating manager...")
