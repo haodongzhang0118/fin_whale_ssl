@@ -14,7 +14,7 @@ from loss import CPCLoss
 from forward import cpc_forward
 from dataloader import create_dataloaders, create_supervised_dataloaders
 from SklearnOfflineProbe import SklearnOfflineProbe
-from OfflineProbe import OfflineProbe  # stable-pretraining style offline probe
+from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
 
 
