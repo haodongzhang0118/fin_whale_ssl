@@ -29,27 +29,8 @@ def create_cpc_module(cfg):
     Returns:
         spt.Module instance configured for CPC
     """
-    # Override scheduler config to inject custom warmup_fraction
-    # This is needed because stable-pretraining doesn't auto-fill total_steps when using dict config
-    if isinstance(cfg.optim.scheduler, str) and cfg.optim.get("warmup_fraction"):
-        warmup_fraction = cfg.optim.warmup_fraction
-        print(f"Configuring scheduler with {warmup_fraction*100:.0f}% warmup...")
-        
-        # Create a callable that will receive optimizer and module at runtime
-        def scheduler_factory(optimizer, module):
-            total_steps = getattr(module.trainer, "estimated_stepping_batches", 1000)
-            peak_step = max(1, int(warmup_fraction * total_steps))
-            print(f"  Total steps: {total_steps}, Warmup steps: {peak_step}")
-            return LinearWarmupCosineAnnealing(
-                optimizer,
-                total_steps=total_steps,
-                peak_step=peak_step,
-                start_factor=0.01,
-                end_lr=0.0
-            )
-        
-        # Replace the scheduler config with our factory
-        cfg.optim.scheduler = scheduler_factory
+    # Store warmup_fraction for later use (OmegaConf doesn't support storing functions)
+    warmup_fraction = cfg.optim.get("warmup_fraction", None)
     
     # Create backbone based on backbone_type
     backbone_type = cfg.get('backbone_type', 'gru')
@@ -101,6 +82,27 @@ def create_cpc_module(cfg):
         optim=cfg.optim,
         hparams={"model": cfg.model},
     )
+    
+    # Override scheduler config if warmup_fraction is specified
+    # This must be done after module creation since OmegaConf doesn't support storing functions
+    if warmup_fraction is not None and isinstance(cfg.optim.scheduler, str):
+        print(f"Configuring scheduler with {warmup_fraction*100:.0f}% warmup...")
+        
+        # Create a callable that will receive optimizer and module at runtime
+        def scheduler_factory(optimizer, module):
+            total_steps = getattr(module.trainer, "estimated_stepping_batches", 1000)
+            peak_step = max(1, int(warmup_fraction * total_steps))
+            print(f"  Total steps: {total_steps}, Warmup steps: {peak_step}")
+            return LinearWarmupCosineAnnealing(
+                optimizer,
+                total_steps=total_steps,
+                peak_step=peak_step,
+                start_factor=0.01,
+                end_lr=0.0
+            )
+        
+        # Replace the scheduler in module's optim (not in cfg)
+        module.optim["scheduler"] = scheduler_factory
     
     return module
 
