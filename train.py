@@ -138,11 +138,17 @@ def create_callbacks(cfg):
         
         if probe_type == "spt":
             # stable-pretraining style offline probe (no PCA, pure linear)
+            # Determine embedding dimension based on backbone type
+            if cfg.backbone_type == "transformer":
+                probe_input_dim = cfg.model.transformer_hidden
+            else:  # gru
+                probe_input_dim = cfg.model.gru_hidden
+            
             linear_probe = OfflineProbe(
                 name="linear_probe",
                 input="embedding",
                 target="label",
-                input_dim=cfg.model.get("gru_hidden", 256),
+                input_dim=probe_input_dim,  # Use correct dimension based on backbone
                 num_classes=2,
                 train_epochs=cfg.get("probe_train_epochs", 100),
                 lr=cfg.get("probe_lr", 0.1),
@@ -152,7 +158,7 @@ def create_callbacks(cfg):
             )
             callbacks.append(linear_probe)
             print(f"  - Added OfflineProbe (stable-pretraining style)")
-            print(f"    Epochs: {cfg.get('probe_train_epochs', 100)}, LR: {cfg.get('probe_lr', 0.1)}, Optimizer: {cfg.get('probe_optimizer', 'lars')}")
+            print(f"    Input dim: {probe_input_dim}, Epochs: {cfg.get('probe_train_epochs', 100)}, LR: {cfg.get('probe_lr', 0.1)}, Optimizer: {cfg.get('probe_optimizer', 'lars')}")
         else:
             # Sklearn-based probe (uses PCA + cross-validation)
             sklearn_probe = SklearnOfflineProbe(
@@ -167,6 +173,12 @@ def create_callbacks(cfg):
         
         # 2. KNN Probe (offline)
         # Collects validation embeddings during validation, computes KNN
+        # Determine embedding dimension based on backbone type
+        if cfg.backbone_type == "transformer":
+            embedding_dim = cfg.model.transformer_hidden
+        else:  # gru
+            embedding_dim = cfg.model.gru_hidden
+        
         knn_probe = OfflineKNN(
             name="knn_probe",
             input="embedding",           # Get embeddings from model output
@@ -175,7 +187,7 @@ def create_callbacks(cfg):
             k=cfg.get("knn_k", 10),      # Number of neighbors
             temperature=cfg.get("knn_temperature", 0.07),
             distance_metric=cfg.get("knn_distance_metric", "euclidean"),
-            input_dim=cfg.model.gru_hidden,  # Dimension of embeddings
+            input_dim=embedding_dim,     # Dimension of embeddings (depends on backbone)
             target_dim=1,                 # Binary classification
             metrics={
                 "acc": torchmetrics.classification.BinaryAccuracy(),
