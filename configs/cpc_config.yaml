@@ -15,8 +15,10 @@ val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_W
 results_path: "/root/results"
 
 timestep: 12
+hidden_dim: 512
 num_epochs: 60
 batch_size: 128
+lr: 1.0e-4
 
 # Random seed for reproducibility
 seed: 42
@@ -31,10 +33,10 @@ model:
   normalize: false   # Whether to normalize features in loss (ssl-whales uses false)
   
   # GRU-specific parameters (used when backbone_type: gru)
-  gru_hidden: 256    # GRU hidden dimension
+  gru_hidden: ${hidden_dim}    # GRU hidden dimension
   
   # Transformer-specific parameters (used when backbone_type: transformer)
-  transformer_hidden: 512    # Transformer hidden dimension (increased from 256)
+  transformer_hidden: ${hidden_dim}    # Transformer hidden dimension (increased from 256)
   num_layers: 8             # Number of transformer layers (increased from 4)
   num_heads: 8               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
@@ -47,7 +49,7 @@ model:
 optim:
   optimizer:
     type: AdamW
-    lr: 1.0e-4
+    lr: ${lr}
     weight_decay: 1.0e-5
     betas: [0.9, 0.999]
   
