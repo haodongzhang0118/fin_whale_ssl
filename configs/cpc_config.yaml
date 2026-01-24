@@ -24,7 +24,7 @@ model:
   sinc_channels: 512 # SincNet output channels
   timestep: ${timestep}       # Number of future steps to predict
   tau: 0.07          # Temperature for InfoNCE loss
-  normalize: true    # Whether to normalize features in loss
+  normalize: false   # Whether to normalize features in loss (ssl-whales uses false)
   
   # GRU-specific parameters (used when backbone_type: gru)
   gru_hidden: 256    # GRU hidden dimension
@@ -56,7 +56,7 @@ optim:
 data:
   data_folder: ${data_path}
   window_duration_sec: 8.0      # Window size in seconds
-  hop_duration_sec: 4.0          # Hop size: 4s = 50% overlap (ssl-whales用0.5s但window=3s)
+  hop_duration_sec: 4.0          # Hop size: 4s = 50% overlap
   sample_rate: ${sample_rate}    # Target sample rate
   batch_size: ${batch_size}                 # Batch size (adjust based on GPU memory)
   num_workers: 4                 # Number of data loading workers

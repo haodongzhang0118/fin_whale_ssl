@@ -189,12 +189,14 @@ class CPCBackbone(nn.Module):
             x: Input waveform [B, 1, T] or [B, T]
             
         Returns:
-            embedding: Fixed-size embedding [B, gru_hidden]
+            embedding: Fixed-size embedding [B, gru_hidden], L2-normalized
         """
         with torch.no_grad():
             c_t, _ = self.forward(x)
             # Average pool over time
             embedding = c_t.mean(dim=1)  # [B, gru_hidden]
+            # L2 normalize for better downstream performance
+            embedding = F.normalize(embedding, p=2, dim=1)
         return embedding
 
 
@@ -440,12 +442,14 @@ class CPCBackboneTransformer(nn.Module):
             x: Input waveform [B, 1, T] or [B, T]
             
         Returns:
-            embedding: Fixed-size embedding [B, transformer_hidden]
+            embedding: Fixed-size embedding [B, transformer_hidden], L2-normalized
         """
         with torch.no_grad():
             c_t, _ = self.forward(x)
             # Average pool over time
             embedding = c_t.mean(dim=1)  # [B, transformer_hidden]
+            # L2 normalize for better downstream performance
+            embedding = F.normalize(embedding, p=2, dim=1)
         return embedding
 
 

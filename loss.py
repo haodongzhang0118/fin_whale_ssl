@@ -2,6 +2,7 @@
 CPC Loss Function
 Implements the InfoNCE contrastive predictive coding loss
 """
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -38,8 +39,7 @@ class CPCLoss(nn.Module):
         """
         timestep, B, D = preds.shape
         
-        # ⭐ KEY: Apply dimension scaling (like ssl-whales)
-        scale = 1.0 / torch.sqrt(torch.tensor(D, dtype=preds.dtype, device=preds.device))
+        scale = 1.0 / math.sqrt(D)  # Use math.sqrt for scalar, more efficient
         
         # Normalize if requested
         if self.normalize:
