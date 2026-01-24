@@ -55,7 +55,7 @@ optim:
   
   scheduler:
     type: LinearWarmupCosineAnnealing
-    peak_step: 0.1
+    peak_step: 0.05
     start_factor: 0.01
     end_lr: 0.0
   
