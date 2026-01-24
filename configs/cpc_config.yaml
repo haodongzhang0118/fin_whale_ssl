@@ -15,7 +15,7 @@ val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_W
 results_path: "/root/results"
 
 timestep: 12
-hidden_dim: 512
+hidden_dim: 256
 num_epochs: 60
 batch_size: 128
 lr: 1.0e-4
@@ -38,7 +38,7 @@ model:
   # Transformer-specific parameters (used when backbone_type: transformer)
   transformer_hidden: ${hidden_dim}    # Transformer hidden dimension (increased from 256)
   num_layers: 8             # Number of transformer layers (increased from 4)
-  num_heads: 8               # Number of attention heads (must divide transformer_hidden)
+  num_heads: 4               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
   drop_path: 0.0             # Stochastic depth rate (default from stable-pretraining)
   attn_drop: 0.0             # Attention dropout (default from stable-pretraining)
@@ -53,7 +53,9 @@ optim:
     weight_decay: 1.0e-5
     betas: [0.9, 0.999]
   
+  # Scheduler with warmup (will be overridden in train.py to inject total_steps)
   scheduler: LinearWarmupCosineAnnealing
+  warmup_fraction: 0.05  # Warmup for 5% of total training steps
   
   interval: step
   frequency: 1
