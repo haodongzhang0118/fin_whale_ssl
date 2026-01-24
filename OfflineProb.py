@@ -2,7 +2,6 @@
 Offline probe based on stable-pretraining's OnlineProbe design
 Collects embeddings during validation, then trains a linear classifier
 """
-from functools import partial
 from typing import Optional, Union
 
 import torch
