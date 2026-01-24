@@ -24,11 +24,13 @@ def compute_tsne(embeddings, perplexity=30, learning_rate=200, n_iter=1000):
     print(f"  Learning rate: {learning_rate}")
     print(f"  Iterations: {n_iter}")
     
+    # Handle sklearn version differences: n_iter (old) vs max_iter (new)
+    # New sklearn (>=1.0) uses max_iter instead of n_iter
     tsne = TSNE(
         n_components=2,
         perplexity=perplexity,
         learning_rate=learning_rate,
-        n_iter=n_iter,
+        max_iter=n_iter,  # Use max_iter (works with sklearn >= 1.0)
         random_state=42,
         verbose=1
     )
@@ -153,7 +155,7 @@ def main():
         '--n_iter',
         type=int,
         default=1000,
-        help='t-SNE iterations (default: 1000)'
+        help='t-SNE max iterations (default: 1000)'
     )
     
     args = parser.parse_args()
