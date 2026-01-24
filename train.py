@@ -24,6 +24,7 @@ def create_cpc_module(cfg, datamodule):
     
     Args:
         cfg: OmegaConf configuration object
+        datamodule: Lightning DataModule for computing total_steps
         
     Returns:
         spt.Module instance configured for CPC
@@ -68,8 +69,24 @@ def create_cpc_module(cfg, datamodule):
         normalize=cfg.model.normalize
     )
     
-    total_steps = len(datamodule.train_dataloader())
+    # Calculate total training steps
+    batches_per_epoch = len(datamodule.train_dataloader())
+    num_epochs = cfg.trainer.max_epochs
+    accumulate_grad_batches = cfg.trainer.get("accumulate_grad_batches", 1)
+    num_devices = cfg.trainer.get("devices", 1)
+    
+    # Total steps = (batches per epoch / accumulation) * epochs / devices
+    total_steps = (batches_per_epoch // accumulate_grad_batches) * num_epochs
+    if isinstance(num_devices, int) and num_devices > 1:
+        total_steps = total_steps // num_devices
+    
+    # Convert peak_step from fraction to absolute steps
     peak_step = max(1, int(cfg.optim.scheduler.peak_step * total_steps))
+    
+    print(f"[Scheduler] batches_per_epoch={batches_per_epoch}, epochs={num_epochs}, "
+          f"accumulate={accumulate_grad_batches}, devices={num_devices}")
+    print(f"[Scheduler] total_steps={total_steps}, warmup_steps={peak_step} ({peak_step/total_steps*100:.1f}%)")
+    
     # Create stable-pretraining Module
     module = spt.Module(
         backbone=backbone,
@@ -83,7 +100,7 @@ def create_cpc_module(cfg, datamodule):
                 "type": cfg.optim.scheduler.type,
                 "total_steps": total_steps,
                 "peak_step": peak_step,
-                "start_factor": cfg.optim.scheduler.start_factor * cfg.optim.optimizer.lr,
+                "start_factor": cfg.optim.scheduler.start_factor,  # Already a ratio (0.01)
                 "end_lr": cfg.optim.scheduler.end_lr,
             },
             "interval": cfg.optim.interval,
@@ -359,7 +376,7 @@ def main(config_path="configs/cpc_config.yaml"):
 
     # Create components
     print("Creating module...")
-    module = create_cpc_module(cfg)
+    module = create_cpc_module(cfg, datamodule)
     
     # Create manager and start training
     print("Creating manager...")
