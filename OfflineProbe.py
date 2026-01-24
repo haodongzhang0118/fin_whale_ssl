@@ -223,33 +223,35 @@ class OfflineProbe(Callback):
         criterion = nn.CrossEntropyLoss()
         
         # Training loop
+        # IMPORTANT: Enable gradients since we're in validation context (no_grad)
         probe.train()
         best_val_acc = 0.0
         best_state = None
         
-        for epoch in range(self.train_epochs):
-            # Forward pass
-            logits = probe(X_train)
-            loss = criterion(logits, y_train)
-            
-            # Backward pass
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            
-            # Validate every 10 epochs
-            if (epoch + 1) % 10 == 0 or epoch == self.train_epochs - 1:
-                probe.eval()
-                with torch.no_grad():
-                    val_logits = probe(X_val)
-                    val_acc = (val_logits.argmax(dim=1) == y_val).float().mean()
-                    
-                    # Track best model
-                    if val_acc > best_val_acc:
-                        best_val_acc = val_acc
-                        best_state = {k: v.cpu().clone() for k, v in probe.state_dict().items()}
+        with torch.enable_grad():  # Re-enable gradients for probe training
+            for epoch in range(self.train_epochs):
+                # Forward pass
+                logits = probe(X_train)
+                loss = criterion(logits, y_train)
                 
-                probe.train()
+                # Backward pass
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+                
+                # Validate every 10 epochs
+                if (epoch + 1) % 10 == 0 or epoch == self.train_epochs - 1:
+                    probe.eval()
+                    with torch.no_grad():
+                        val_logits = probe(X_val)
+                        val_acc = (val_logits.argmax(dim=1) == y_val).float().mean()
+                        
+                        # Track best model
+                        if val_acc > best_val_acc:
+                            best_val_acc = val_acc
+                            best_state = {k: v.cpu().clone() for k, v in probe.state_dict().items()}
+                    
+                    probe.train()
         
         # Load best model
         if best_state is not None:
