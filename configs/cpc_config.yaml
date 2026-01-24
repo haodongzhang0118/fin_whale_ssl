@@ -2,7 +2,7 @@
 # Based on stable-pretraining framework
 
 # Backbone type: 'gru' or 'transformer'
-backbone_type: gru  # Options: 'gru', 'transformer'
+backbone_type: transformer  # Options: 'gru', 'transformer'
 
 # Experiment name
 sample_rate: 16000
@@ -16,7 +16,7 @@ results_path: "/root/results"
 
 timestep: 12
 hidden_dim: 256
-num_epochs: 60
+num_epochs: 10
 batch_size: 128
 lr: 5.0e-5
 
