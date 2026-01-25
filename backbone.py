@@ -62,68 +62,15 @@ class BRN1d(nn.Module):
         
         return y
 
-# ============================================================================
-# OLD CPCEncoder (64x compression) - COMMENTED OUT
-# ============================================================================
-# class CPCEncoder(nn.Module):
-#     """
-#     Encoder network: stacked Conv1d + BRN + ReLU
-#     Downsamples the SincNet output to produce latent representations
-#     
-#     Architecture with 6 conv layers for aggressive downsampling:
-#     - Total encoder downsampling: 4 × 4 × 2 × 2 × 1 × 1 = 64x
-#     - Combined with SincBlock (5x): 320x total
-#     - For 16000 Hz, 8s audio: 128000 samples → 400 time steps
-#     
-#     Args:
-#         in_chan (int): Input channels from SincNet (default: 512)
-#         enc_hidden (int): Output hidden dimension (default: 512)
-#     """
-#     def __init__(self, in_chan=512, enc_hidden=512):
-#         super().__init__()
-#         self.encoder = nn.Sequential(
-#             # Layer 1: stride=4 (4x compression)
-#             nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
-#             BRN1d(enc_hidden),
-#             nn.ReLU(inplace=True),
-#             # Layer 2: stride=4 (16x compression)
-#             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
-#             BRN1d(enc_hidden),
-#             nn.ReLU(inplace=True),
-#             # Layer 3: stride=2 (32x compression)
-#             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-#             BRN1d(enc_hidden),
-#             nn.ReLU(inplace=True),
-#             # Layer 4: stride=2 (64x compression)
-#             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-#             BRN1d(enc_hidden),
-#             nn.ReLU(inplace=True),
-#             # Layer 5: stride=1 (maintain 64x)
-#             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
-#             BRN1d(enc_hidden),
-#             nn.ReLU(inplace=True),
-#         )
-# 
-#     def forward(self, x):
-#         return self.encoder(x)
-# ============================================================================
-
-
 class CPCEncoder(nn.Module):
     """
-    NEW Encoder network: stacked Conv1d + BRN + ReLU
+    Encoder network: stacked Conv1d + BRN + ReLU
     Downsamples the SincNet output to produce latent representations
     
-    Architecture with 3 conv layers for MODERATE downsampling:
-    - Total encoder downsampling: 4 × 4 × 2 = 32x
-    - Combined with SincBlock (5x): 160x total
-    - For 16000 Hz, 8s audio: 128000 samples → 800 time steps
-    - Each timestep represents: 8000ms / 800 = 10ms
-    
-    Whale call coverage:
-    - Average call (870ms): 870ms / 10ms = 87 timesteps ✓
-    - Shortest call (108ms): 108ms / 10ms = 10.8 timesteps ✓
-    - Predicting 12 steps: 12 × 10ms = 120ms (14% of avg call) ✓
+    Architecture with 6 conv layers for aggressive downsampling:
+    - Total encoder downsampling: 4 × 4 × 2 × 2 × 1 × 1 = 64x
+    - Combined with SincBlock (5x): 320x total
+    - For 16000 Hz, 8s audio: 128000 samples → 400 time steps
     
     Args:
         in_chan (int): Input channels from SincNet (default: 512)
@@ -136,31 +83,26 @@ class CPCEncoder(nn.Module):
             nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            
             # Layer 2: stride=4 (16x compression)
             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            
             # Layer 3: stride=2 (32x compression)
             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            
             # Layer 4: stride=2 (64x compression)
             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            
-            # Layer 5: stride=2 (128x compression) - NEW!
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
+            # Layer 5: stride=1 (maintain 64x)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
         return self.encoder(x)
-
 
 class CPCBackbone(nn.Module):
     """
