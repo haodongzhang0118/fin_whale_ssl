@@ -16,6 +16,7 @@ from dataloader import create_dataloaders, create_supervised_dataloaders
 from SklearnOfflineProbe import SklearnOfflineProbe
 from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
+from monitor_tau import TauMonitor
 
 
 def create_cpc_module(cfg, datamodule):
@@ -66,7 +67,8 @@ def create_cpc_module(cfg, datamodule):
     # Create CPC loss
     cpc_loss = CPCLoss(
         tau=cfg.model.tau,
-        normalize=cfg.model.normalize
+        normalize=cfg.model.normalize,
+        learnable_tau=cfg.model.get("learnable_tau", True)
     )
     
     # Calculate total training steps
@@ -158,6 +160,12 @@ def create_callbacks(cfg):
     # Learning rate monitor
     lr_monitor = LearningRateMonitor(logging_interval='step')
     callbacks.append(lr_monitor)
+    
+    # Temperature (tau) monitor for learnable temperature
+    if cfg.model.get("learnable_tau", False):
+        tau_monitor = TauMonitor(log_every_n_steps=100)
+        callbacks.append(tau_monitor)
+        print("✅ Added TauMonitor (learnable temperature tracking)")
     
     # Add evaluation probes if configured
     if cfg.get("use_probes", True):  # Default to True

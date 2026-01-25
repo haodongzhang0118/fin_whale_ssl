@@ -160,7 +160,8 @@ def load_model_from_checkpoint(checkpoint_path, config_path, device):
     # Create CPC loss
     cpc_loss = CPCLoss(
         tau=cfg.model.tau,
-        normalize=cfg.model.normalize
+        normalize=cfg.model.normalize,
+        learnable_tau=cfg.model.get("learnable_tau", False)  # Use False for eval to load trained value
     )
     
     # Create module

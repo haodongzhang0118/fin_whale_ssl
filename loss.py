@@ -17,13 +17,34 @@ class CPCLoss(nn.Module):
     between predictions and future observations.
     
     Args:
-        tau (float): Temperature parameter for softmax (default: 0.07)
+        tau (float): Initial temperature parameter for softmax (default: 0.07)
         normalize (bool): Whether to L2-normalize features (default: True)
+        learnable_tau (bool): Whether tau is a learnable parameter (default: True)
     """
-    def __init__(self, tau=0.07, normalize=True):
+    def __init__(self, tau=0.07, normalize=True, learnable_tau=True):
         super().__init__()
-        self.tau = tau
         self.normalize = normalize
+        self.learnable_tau = learnable_tau
+        
+        if learnable_tau:
+            # Store log(tau) as learnable parameter to ensure tau > 0
+            # When tau=0.01, log(0.01)=-4.605, when tau=0.07, log(0.07)=-2.659
+            self.log_tau = nn.Parameter(torch.log(torch.tensor(tau)))
+            print(f"CPCLoss: Using learnable temperature (initial tau={tau:.4f})")
+        else:
+            # Fixed temperature
+            self.register_buffer('tau', torch.tensor(tau))
+            print(f"CPCLoss: Using fixed temperature (tau={tau:.4f})")
+    
+    @property
+    def tau(self):
+        """Get current temperature value"""
+        if self.learnable_tau:
+            # Clamp log_tau to prevent extreme values
+            # log_tau in [-6, 0] -> tau in [0.0025, 1.0]
+            return torch.exp(torch.clamp(self.log_tau, min=-6.0, max=0.0))
+        else:
+            return self._buffers['tau']
 
     def forward(self, preds, targets):
         """
@@ -79,10 +100,28 @@ class InfoNCELoss(nn.Module):
     """
     Alternative simpler InfoNCE implementation
     Computes loss for a single prediction step
+    
+    Args:
+        temperature (float): Initial temperature parameter (default: 0.07)
+        learnable_temp (bool): Whether temperature is learnable (default: True)
     """
-    def __init__(self, temperature=0.07):
+    def __init__(self, temperature=0.07, learnable_temp=True):
         super().__init__()
-        self.temperature = temperature
+        self.learnable_temp = learnable_temp
+        
+        if learnable_temp:
+            # Store log(temperature) as learnable parameter
+            self.log_temp = nn.Parameter(torch.log(torch.tensor(temperature)))
+        else:
+            self.register_buffer('temperature', torch.tensor(temperature))
+    
+    @property
+    def temperature(self):
+        """Get current temperature value"""
+        if self.learnable_temp:
+            return torch.exp(torch.clamp(self.log_temp, min=-6.0, max=0.0))
+        else:
+            return self._buffers['temperature']
     
     def forward(self, query, key):
         """
