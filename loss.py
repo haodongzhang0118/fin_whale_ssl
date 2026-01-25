@@ -32,8 +32,8 @@ class CPCLoss(nn.Module):
             self.log_tau = nn.Parameter(torch.log(torch.tensor(tau)))
             print(f"CPCLoss: Using learnable temperature (initial tau={tau:.4f})")
         else:
-            # Fixed temperature
-            self.register_buffer('tau', torch.tensor(tau))
+            # Fixed temperature - use different name to avoid conflict with @property
+            self.register_buffer('_tau_value', torch.tensor(tau))
             print(f"CPCLoss: Using fixed temperature (tau={tau:.4f})")
     
     @property
@@ -41,10 +41,10 @@ class CPCLoss(nn.Module):
         """Get current temperature value"""
         if self.learnable_tau:
             # Clamp log_tau to prevent extreme values
-            # log_tau in [-6, 0] -> tau in [0.0025, 1.0]
-            return torch.exp(torch.clamp(self.log_tau, min=-4, max=0.0))
+            # log_tau in [-4, 0] -> tau in [0.018, 1.0]
+            return torch.exp(torch.clamp(self.log_tau, min=-4.0, max=0.0))
         else:
-            return self._buffers['tau']
+            return self._tau_value
 
     def forward(self, preds, targets):
         """
@@ -113,15 +113,16 @@ class InfoNCELoss(nn.Module):
             # Store log(temperature) as learnable parameter
             self.log_temp = nn.Parameter(torch.log(torch.tensor(temperature)))
         else:
-            self.register_buffer('temperature', torch.tensor(temperature))
+            # Fixed temperature - use different name to avoid conflict with @property
+            self.register_buffer('_temp_value', torch.tensor(temperature))
     
     @property
     def temperature(self):
         """Get current temperature value"""
         if self.learnable_temp:
-            return torch.exp(torch.clamp(self.log_temp, min=-6.0, max=0.0))
+            return torch.exp(torch.clamp(self.log_temp, min=-4.0, max=0.0))
         else:
-            return self._buffers['temperature']
+            return self._temp_value
     
     def forward(self, query, key):
         """
