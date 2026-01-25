@@ -38,7 +38,7 @@ model:
   
   # Transformer-specific parameters (used when backbone_type: transformer)
   transformer_hidden: ${hidden_dim}    # Transformer hidden dimension (increased from 256)
-  num_layers: 8             # Number of transformer layers (increased from 4)
+  num_layers: 4             # Number of transformer layers (increased from 4)
   num_heads: 8               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
   drop_path: 0.0             # Stochastic depth rate (default from stable-pretraining)

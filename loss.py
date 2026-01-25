@@ -60,7 +60,7 @@ class CPCLoss(nn.Module):
         """
         timestep, B, D = preds.shape
         
-        scale = 1.0 / math.sqrt(D)  # Use math.sqrt for scalar, more efficient
+        scale = 1.0 # / math.sqrt(D)  # Use math.sqrt for scalar, more efficient
         
         # Normalize if requested
         if self.normalize:
