@@ -3,24 +3,22 @@
 Visualize embeddings using t-SNE
 Simple script to visualize CPC learned representations
 
-Sample run:
-python visualize_tsne.py \
-    --checkpoint /root/results/ckpts_small/best.ckpt \
-    --config configs/cpc_config.yaml \
-    --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE \
-    --output /root/vis/tsne_mediterranean.png 
+Sample run (using supervised dataloader with data augmentation):
 
+# Mediterranean Fin Whale (split='both' = train+val combined)
 python visualize_tsne.py \
-    --checkpoint /root/results/ckpts_small/best.ckpt \
-    --config configs/cpc_config.yaml \
-    --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
-    --output /root/vis/tsne_caribbean.png 
+    --checkpoint /root/results/ckpts_small/best-v52.ckpt \
+    --data_folder /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE \
+    --split both \
+    --output /root/vis/tsne_mediterranean_both.png
 
+# Caribbean Humpback Whale (split='both')
 python visualize_tsne.py \
-    --checkpoint /root/results/ckpts_small/best.ckpt \
-    --config configs/cpc_config.yaml \
-    --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
-    --output /root/vis/tsne_both.png 
+    --checkpoint /root/results/ckpts_small/best-v52.ckpt \
+    --data_folder /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
+    --split both \
+    --output /root/vis/tsne_caribbean_both.png
+
 """
 
 import torch
@@ -31,7 +29,7 @@ import argparse
 
 # Import from eval.py - reuse tested functions!
 from eval import load_model_from_checkpoint, extract_embeddings
-from dataloader import create_annotation_dataloaders
+from dataloader import create_supervised_dataloaders
 
 
 def compute_tsne(embeddings, perplexity=30, learning_rate=200, n_iter=1000):
@@ -118,20 +116,23 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
         Examples:
-        # Basic usage (uses config's val_data_folder)
+        # Basic usage (uses config's val_data_folder, split='both')
         python visualize_tsne.py --checkpoint results/cpc_finwhale_smalldata/best.ckpt
         
-        # Single dataset
-        python visualize_tsne.py --checkpoint best.ckpt --dataset_folders RESOURCES/SEGLVIK
+        # Specify dataset folder
+        python visualize_tsne.py --checkpoint best.ckpt --data_folder RESOURCES/SEGLVIK
         
-        # Multiple datasets (combined)
-        python visualize_tsne.py --checkpoint best.ckpt --dataset_folders RESOURCES/SEGLVIK RESOURCES/MEDITERRANEAN_FIN_WHALE
+        # Use only validation split
+        python visualize_tsne.py --checkpoint best.ckpt --split val
         
-        # With custom output path
-        python visualize_tsne.py --checkpoint best.ckpt --output my_tsne.png
+        # Use both train and val (more samples)
+        python visualize_tsne.py --checkpoint best.ckpt --split both
+        
+        # With custom output path and more augmentation
+        python visualize_tsne.py --checkpoint best.ckpt --tfr_by_pulse 10 --output my_tsne.png
         
         # More samples and custom t-SNE parameters
-        python visualize_tsne.py --checkpoint best.ckpt --max_samples 3000 --perplexity 50
+        python visualize_tsne.py --checkpoint best.ckpt --max_samples 5000 --perplexity 50
         """
     )
     
@@ -148,12 +149,24 @@ def main():
         help='Path to config file (default: configs/cpc_config.yaml)'
     )
     parser.add_argument(
-        '--dataset_folders',
+        '--data_folder',
         type=str,
-        nargs='+',
         default=None,
-        help='Path(s) to dataset folder(s) (default: use val_data_path from config). '
-             'Can specify multiple: --dataset_folders RESOURCES/SEGLVIK RESOURCES/MEDITERRANEAN_FIN_WHALE'
+        help='Path to dataset folder (default: use val_data_path from config). '
+             'Example: --data_folder /root/.../RESOURCES/SEGLVIK'
+    )
+    parser.add_argument(
+        '--split',
+        type=str,
+        default='both',
+        choices=['train', 'val', 'test', 'both'],
+        help='Which split to visualize (default: both)'
+    )
+    parser.add_argument(
+        '--tfr_by_pulse',
+        type=int,
+        default=5,
+        help='Number of windows per pulse for positive samples (default: 5)'
     )
     parser.add_argument(
         '--output',
@@ -200,32 +213,31 @@ def main():
     module, cfg = load_model_from_checkpoint(args.checkpoint, args.config, device)
     print(f"✓ Model loaded on {device}")
     
-    # Determine dataset folders
-    if args.dataset_folders:
-        dataset_folders = args.dataset_folders
+    # Determine data folder
+    if args.data_folder:
+        data_folder = args.data_folder
     else:
-        # Use config value (could be single or list)
-        dataset_folders = cfg.data.val_data_folder
+        # Use config value
+        data_folder = cfg.data.val_data_folder
     
-    # Create dataloader using annotation-based dataset
-    print(f"\n[2/3] Creating annotation-based dataloader...")
-    if isinstance(dataset_folders, list):
-        print(f"Dataset folders: {len(dataset_folders)} datasets")
-        for folder in dataset_folders:
-            print(f"  - {folder}")
-    else:
-        print(f"Dataset folder: {dataset_folders}")
+    # Create dataloader using supervised dataset (with data augmentation)
+    print(f"\n[2/3] Creating supervised dataloader...")
+    print(f"Data folder: {data_folder}")
+    print(f"Split: {args.split}")
+    print(f"TFR by pulse: {args.tfr_by_pulse}")
     
-    dataloader = create_annotation_dataloaders(
-        dataset_folders=dataset_folders,
-        split='val',
+    dataloader = create_supervised_dataloaders(
+        data_folder=data_folder,
+        split=args.split,
         window_duration_sec=cfg.data.window_duration_sec,
         sample_rate=cfg.sample_rate,
         batch_size=64,
         num_workers=cfg.data.num_workers,
-        seed=cfg.seed,
         shuffle=False,
         drop_last=False,
+        pin_memory=True,
+        tfr_by_pulse=args.tfr_by_pulse,
+        seed=cfg.seed,
     )
     
     # Extract embeddings using eval.py function
