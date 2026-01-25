@@ -42,7 +42,7 @@ class CPCLoss(nn.Module):
         if self.learnable_tau:
             # Clamp log_tau to prevent extreme values
             # log_tau in [-6, 0] -> tau in [0.0025, 1.0]
-            return torch.exp(torch.clamp(self.log_tau, min=-4.7, max=0.0))
+            return torch.exp(torch.clamp(self.log_tau, min=-4, max=0.0))
         else:
             return self._buffers['tau']
 
