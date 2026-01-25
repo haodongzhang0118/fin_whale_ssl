@@ -114,11 +114,16 @@ class CPCEncoder(nn.Module):
     NEW Encoder network: stacked Conv1d + BRN + ReLU
     Downsamples the SincNet output to produce latent representations
     
-    Architecture with 5 conv layers for AGGRESSIVE downsampling:
-    - Total encoder downsampling: 4 × 4 × 2 × 2 × 2 = 128x
-    - Combined with SincBlock (5x): 640x total
-    - For 16000 Hz, 8s audio: 128000 samples → 200 time steps
-    - Each timestep represents: 8000ms / 200 = 40ms
+    Architecture with 3 conv layers for MODERATE downsampling:
+    - Total encoder downsampling: 4 × 4 × 2 = 32x
+    - Combined with SincBlock (5x): 160x total
+    - For 16000 Hz, 8s audio: 128000 samples → 800 time steps
+    - Each timestep represents: 8000ms / 800 = 10ms
+    
+    Whale call coverage:
+    - Average call (870ms): 870ms / 10ms = 87 timesteps ✓
+    - Shortest call (108ms): 108ms / 10ms = 10.8 timesteps ✓
+    - Predicting 12 steps: 12 × 10ms = 120ms (14% of avg call) ✓
     
     Args:
         in_chan (int): Input channels from SincNet (default: 512)
@@ -128,7 +133,7 @@ class CPCEncoder(nn.Module):
         super().__init__()
         self.encoder = nn.Sequential(
             # Layer 1: stride=4 (4x compression)
-            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=8, padding=2, bias=False),
+            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
             
@@ -139,16 +144,6 @@ class CPCEncoder(nn.Module):
             
             # Layer 3: stride=2 (32x compression)
             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
-            
-            # Layer 4: stride=2 (64x compression)
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
-            
-            # Layer 5: stride=2 (128x compression) - NEW!
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=1, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
         )
