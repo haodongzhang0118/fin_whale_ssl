@@ -341,21 +341,22 @@ class SEGLVIKSupervisedDataset(Dataset):
             'train': 'trainset',
             'val': 'validset',
             'test': 'testset',
-            'both': ['trainset', 'validset']  # Use both train and val
+            'both': ['trainset', 'validset'],  # Use both train and val
+            'all': ['trainset', 'validset', 'testset']  # Use all three splits
         }
         
         if split not in split_folders:
-            raise ValueError(f"Supervised split must be 'train', 'val', 'test', or 'both'")
+            raise ValueError(f"Supervised split must be 'train', 'val', 'test', 'both', or 'all'")
         
         print(f"\n{'='*60}")
         print(f"SEGLVIK Supervised Dataset - {split.upper()}")
         print(f"{'='*60}")
         print(f"Data folder: {data_folder}")
         
-        # Handle 'both' split - load from both trainset and validset
+        # Handle 'both' or 'all' split - load from multiple split folders
         import pandas as pd
         
-        if split == 'both':
+        if split in ['both', 'all']:
             split_folder_list = split_folders[split]
             all_annotations = []
             self.audio_file_dict = {}
@@ -773,11 +774,12 @@ class AnnotationBasedDataset(Dataset):
             'train': 'trainset',
             'val': 'validset',
             'test': 'testset',
-            'both': ['trainset', 'validset']  # Use both train and val
+            'both': ['trainset', 'validset'],  # Use both train and val
+            'all': ['trainset', 'validset', 'testset']  # Use all three splits
         }
         
         if split not in split_folders:
-            raise ValueError(f"Invalid split '{split}'. Must be 'train', 'val', 'test', or 'both'")
+            raise ValueError(f"Invalid split '{split}'. Must be 'train', 'val', 'test', 'both', or 'all'")
         
         print(f"\n{'='*80}")
         print(f"Annotation-Based Dataset - {split.upper()}")
@@ -788,9 +790,12 @@ class AnnotationBasedDataset(Dataset):
         total_annotations = 0
         
         # Determine which split folders to use
-        if split == 'both':
+        if split in ['both', 'all']:
             split_folder_list = split_folders[split]
-            print(f"Loading from BOTH trainset and validset")
+            if split == 'both':
+                print(f"Loading from BOTH trainset and validset")
+            else:
+                print(f"Loading from ALL splits (trainset, validset, testset)")
         else:
             split_folder_list = [split_folders[split]]
         
@@ -828,7 +833,7 @@ class AnnotationBasedDataset(Dataset):
                 # Load annotations
                 annots = pd.read_csv(csv_path)
                 
-                if split == 'both':
+                if split in ['both', 'all']:
                     print(f"\n📂 {dataset_name} / {split_folder}")
                 else:
                     print(f"\n📂 {dataset_name}")

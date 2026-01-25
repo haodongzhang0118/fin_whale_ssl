@@ -12,7 +12,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from backbone import cpc_backbone, cpc_backbone_transformer
 from loss import CPCLoss
 from forward import cpc_forward
-from dataloader import create_dataloaders, create_supervised_dataloaders
+from dataloader import create_dataloaders, create_annotation_dataloaders
 from SklearnOfflineProbe import SklearnOfflineProbe
 from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
@@ -282,12 +282,12 @@ def create_datamodule(cfg):
         data_fraction=cfg.data.get("train_data_fraction", 1.0),
     )
     
-    # Create validation dataloader (supervised, with labels)
-    # Use 'both' split to combine train and val data
+    # Create validation dataloader (annotation-based, with labels)
+    # Use 'all' split to combine train, val, and test data
     print("\nCreating validation dataloader...")
-    val_loader = create_supervised_dataloaders(
-        data_folder=cfg.data.val_data_folder,  # Use val_data_folder
-        split="both",  # Use both train and val splits
+    val_loader = create_annotation_dataloaders(
+        dataset_folders=cfg.data.val_data_folder,  # Use val_data_folder
+        split="all",  # Use all splits (train, val, test)
         window_duration_sec=cfg.data.window_duration_sec,
         sample_rate=cfg.data.sample_rate,
         batch_size=cfg.data.batch_size,
