@@ -146,6 +146,16 @@ class CPCEncoder(nn.Module):
             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
+            
+            # Layer 4: stride=2 (64x compression)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
+            BRN1d(enc_hidden),
+            nn.ReLU(inplace=True),
+            
+            # Layer 5: stride=2 (128x compression) - NEW!
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
+            BRN1d(enc_hidden),
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x):
