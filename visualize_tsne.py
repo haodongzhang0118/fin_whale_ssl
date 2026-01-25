@@ -177,7 +177,7 @@ def main():
     parser.add_argument(
         '--max_samples',
         type=int,
-        default=2000,
+        default=5000,
         help='Maximum number of samples to visualize (default: 2000)'
     )
     parser.add_argument(
