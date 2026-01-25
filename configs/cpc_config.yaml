@@ -17,7 +17,7 @@ results_path: "/root/results"
 timestep: 8
 enc_hidden: 128
 transformer_hidden: 64
-num_epochs: 10
+num_epochs: 60
 batch_size: 512
 lr: 1.0e-3
 
