@@ -68,9 +68,9 @@ class CPCEncoder(nn.Module):
     Downsamples the SincNet output to produce latent representations
     
     Architecture with 6 conv layers for aggressive downsampling:
-    - Total encoder downsampling: 5 × 3 × 2 × 2 × 1 × 1 = 60x
-    - Combined with SincBlock (5x): 300x total
-    - For 16000 Hz, 8s audio: 128000 samples → 427 time steps
+    - Total encoder downsampling: 4 × 4 × 2 × 2 × 1 × 1 = 64x
+    - Combined with SincBlock (5x): 320x total
+    - For 16000 Hz, 8s audio: 128000 samples → 400 time steps
     
     Args:
         in_chan (int): Input channels from SincNet (default: 512)
@@ -79,27 +79,23 @@ class CPCEncoder(nn.Module):
     def __init__(self, in_chan=512, enc_hidden=512):
         super().__init__()
         self.encoder = nn.Sequential(
-            # Layer 1: stride=5
-            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=5, padding=2, bias=False),
+            # Layer 1: stride=4 (4x compression)
+            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            # Layer 2: stride=3
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=3, padding=1, bias=False),
+            # Layer 2: stride=4 (16x compression)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            # Layer 3: stride=2
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=2, padding=1, bias=False),
+            # Layer 3: stride=2 (32x compression)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            # Layer 4: stride=2
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=2, padding=1, bias=False),
+            # Layer 4: stride=2 (64x compression)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            # Layer 5: stride=1
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
-            # Layer 6: stride=1
+            # Layer 5: stride=1 (maintain 64x)
             nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
             BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
