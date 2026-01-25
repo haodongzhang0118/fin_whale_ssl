@@ -15,7 +15,7 @@ val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_W
 results_path: "/root/results"
 
 timestep: 8
-hidden_dim: 256
+hidden_dim: 64
 num_epochs: 10
 batch_size: 256
 lr: 1.0e-4
@@ -38,8 +38,8 @@ model:
   
   # Transformer-specific parameters (used when backbone_type: transformer)
   transformer_hidden: ${hidden_dim}    # Transformer hidden dimension (increased from 256)
-  num_layers: 6             # Number of transformer layers (increased from 4)
-  num_heads: 8               # Number of attention heads (must divide transformer_hidden)
+  num_layers: 4             # Number of transformer layers (increased from 4)
+  num_heads: 2               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
   drop_path: 0.0             # Stochastic depth rate (default from stable-pretraining)
   attn_drop: 0.0             # Attention dropout (default from stable-pretraining)
