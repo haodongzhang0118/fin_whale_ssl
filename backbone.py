@@ -71,33 +71,37 @@ class CPCEncoder(nn.Module):
     - Total encoder downsampling: 5 × 3 × 2 × 2 × 1 × 1 = 60x
     - Combined with SincBlock (5x): 300x total
     - For 16000 Hz, 8s audio: 128000 samples → 427 time steps
+    
+    Args:
+        in_chan (int): Input channels from SincNet (default: 512)
+        enc_hidden (int): Output hidden dimension (default: 512)
     """
-    def __init__(self, in_chan=512):
+    def __init__(self, in_chan=512, enc_hidden=512):
         super().__init__()
         self.encoder = nn.Sequential(
             # Layer 1: stride=5
-            nn.Conv1d(in_chan, 512, kernel_size=8, stride=5, padding=2, bias=False),
-            BRN1d(512),
+            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=5, padding=2, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
             # Layer 2: stride=3
-            nn.Conv1d(512, 512, kernel_size=4, stride=3, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=3, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
             # Layer 3: stride=2
-            nn.Conv1d(512, 512, kernel_size=3, stride=2, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=2, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
             # Layer 4: stride=2
-            nn.Conv1d(512, 512, kernel_size=3, stride=2, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=2, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
             # Layer 5: stride=1
-            nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
             # Layer 6: stride=1
-            nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
         )
 
@@ -132,16 +136,16 @@ class CPCBackbone(nn.Module):
         
         # SincNet front-end for learnable filterbank
         self.sinc_block = SincBlock(
-            out_channels=sinc_channels, 
-            stride=5, 
+            out_channels=sinc_channels,
+            stride=5,
             sample_rate=sample_rate,
-            return_abs=False, 
-            learnable_filters=False, 
+            return_abs=False,
+            learnable_filters=False,
             padding="same"
         )
         
         # Encoder: converts SincNet features to latent representations z_t
-        self.encoder = CPCEncoder(in_chan=sinc_channels)
+        self.encoder = CPCEncoder(in_chan=sinc_channels, enc_hidden=enc_hidden)
         
         # GRU autoregressor: summarizes past context
         self.gru = nn.GRU(
@@ -357,7 +361,7 @@ class CPCBackboneTransformer(nn.Module):
         )
         
         # Encoder: converts SincNet features to latent representations z_t
-        self.encoder = CPCEncoder(in_chan=sinc_channels)
+        self.encoder = CPCEncoder(in_chan=sinc_channels, enc_hidden=enc_hidden)
         
         # Project encoder output to transformer dimension
         self.input_proj = nn.Linear(enc_hidden, transformer_hidden)
