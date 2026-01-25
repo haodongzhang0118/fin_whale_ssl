@@ -14,7 +14,7 @@ val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_W
 
 results_path: "/root/results"
 
-timestep: 6
+timestep: 12
 hidden_dim: 512
 num_epochs: 10
 batch_size: 128
