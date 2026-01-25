@@ -187,8 +187,8 @@ def load_model_from_checkpoint(checkpoint_path, config_path, device):
 def evaluate_checkpoint(
     checkpoint_path,
     config_path,
-    data_folder,
-    split="val",
+    dataset_folders,
+    split="all",
     batch_size=128,
     num_workers=4,
     sample_rate=16000,
@@ -199,13 +199,13 @@ def evaluate_checkpoint(
     device=None,
 ):
     """
-    Complete evaluation pipeline
+    Complete evaluation pipeline (using annotation-based dataloader)
     
     Args:
         checkpoint_path: Path to .ckpt file
         config_path: Path to config.yaml
-        data_folder: Path to SEGLVIK data folder
-        split: 'val' or 'test'
+        dataset_folders: Path(s) to dataset folder(s) (single path or list of paths)
+        split: 'train', 'val', 'test', 'both', or 'all' (default: 'all' = train+val+test)
         batch_size: Batch size for data loading
         num_workers: Number of data loader workers
         sample_rate: Audio sample rate
@@ -218,16 +218,21 @@ def evaluate_checkpoint(
     Returns:
         Dictionary of evaluation metrics
     """
-    from dataloader import create_supervised_dataloaders
+    from dataloader import create_annotation_dataloaders
     
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     print("=" * 80)
-    print("CPC Model Evaluation")
+    print("CPC Model Evaluation (Annotation-Based Dataloader)")
     print("=" * 80)
     print(f"Checkpoint: {checkpoint_path}")
-    print(f"Data folder: {data_folder}")
+    if isinstance(dataset_folders, list):
+        print(f"Dataset folders: {len(dataset_folders)} datasets")
+        for folder in dataset_folders:
+            print(f"  - {folder}")
+    else:
+        print(f"Dataset folder: {dataset_folders}")
     print(f"Split: {split}")
     print(f"Device: {device}")
     print("=" * 80)
@@ -238,10 +243,10 @@ def evaluate_checkpoint(
     backbone_type = cfg.get('backbone_type', 'gru')
     print(f"✅ Model loaded (backbone: {backbone_type.upper()})")
     
-    # Create dataloader
-    print(f"\n[2/3] Creating {split} dataloader...")
-    val_loader = create_supervised_dataloaders(
-        data_folder=data_folder,
+    # Create dataloader (annotation-based)
+    print(f"\n[2/3] Creating annotation-based dataloader (split={split})...")
+    val_loader = create_annotation_dataloaders(
+        dataset_folders=dataset_folders,
         split=split,
         window_duration_sec=window_duration,
         sample_rate=sample_rate,

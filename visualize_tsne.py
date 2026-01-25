@@ -6,14 +6,14 @@ Simple script to visualize CPC learned representations
 Sample run (using annotation-based dataloader):
 
 python visualize_tsne.py \
-    --checkpoint /root/results/ckpts_small/best-v52.ckpt \
+    --checkpoint /root/results/ckpts_small/best.ckpt \
     --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE \
     --split all \
     --max_samples 2000 \
     --output /root/vis/tsne_mediterranean_all.png
 
 python visualize_tsne.py \
-    --checkpoint /root/results/ckpts_small/best-v52.ckpt \
+    --checkpoint /root/results/ckpts_small/best.ckpt \
     --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
     --split all \
     --max_samples 5000 \
