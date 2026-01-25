@@ -19,7 +19,7 @@ enc_hidden: 128
 transformer_hidden: 64
 num_epochs: 10
 batch_size: 512
-lr: 1.0e-4
+lr: 1.0e-3
 
 # Random seed for reproducibility
 seed: 42
