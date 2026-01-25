@@ -9,7 +9,7 @@ sample_rate: 16000
 exp_name: cpc_finwhale_smalldata
 
 # Data paths
-train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"
+train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
 val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"  # Can be different from train
 
 results_path: "/root/results"
@@ -31,7 +31,7 @@ model:
   timestep: ${timestep}       # Number of future steps to predict
   tau: 0.07          # Initial temperature for InfoNCE loss (learnable if learnable_tau=true)
   normalize: true   # Whether to normalize features in loss (ssl-whales uses false)
-  learnable_tau: true  # Whether tau is a learnable parameter
+  learnable_tau: false  # Whether tau is a learnable parameter
   
   # GRU-specific parameters (used when backbone_type: gru)
   gru_hidden: ${hidden_dim}    # GRU hidden dimension
