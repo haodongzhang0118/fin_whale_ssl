@@ -13,7 +13,7 @@ exp_name: cpc_finwhale_smalldata
 # MEDITERRANEAN_FIN_WHALE
 # CARABBEAN_HUMPBACK_WHALE
 train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK" # SEGLVIK
-val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE"  # CARABBEAN_HUMPBACK_WHALE
+val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"  # CARABBEAN_HUMPBACK_WHALE
 
 results_path: "/root/results"
 
@@ -46,8 +46,8 @@ model:
   num_heads: 2               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
   drop_path: 0.0             # Stochastic depth rate (default from stable-pretraining)
-  attn_drop: 0.0             # Attention dropout (default from stable-pretraining)
-  proj_drop: 0.0             # Projection dropout (default from stable-pretraining)
+  attn_drop: 0.1             # Attention dropout (default from stable-pretraining)
+  proj_drop: 0.1             # Projection dropout (default from stable-pretraining)
   pos_encoding: sinusoidal   # Positional encoding: 'sinusoidal' or 'learnable'
 
 # Optimizer configuration
