@@ -9,15 +9,15 @@ sample_rate: 16000
 exp_name: cpc_finwhale_smalldata
 
 # Data paths
-train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE" # SEGLVIK
+train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK" # SEGLVIK
 val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"  # Can be different from train
 
 results_path: "/root/results"
 
 timestep: 12
-hidden_dim: 512
-num_epochs: 10
-batch_size: 128
+hidden_dim: 256
+num_epochs: 60
+batch_size: 64
 lr: 5.0e-5
 
 # Random seed for reproducibility
@@ -38,7 +38,7 @@ model:
   
   # Transformer-specific parameters (used when backbone_type: transformer)
   transformer_hidden: ${hidden_dim}    # Transformer hidden dimension (increased from 256)
-  num_layers: 8             # Number of transformer layers (increased from 4)
+  num_layers: 4             # Number of transformer layers (increased from 4)
   num_heads: 8               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
   drop_path: 0.0             # Stochastic depth rate (default from stable-pretraining)
