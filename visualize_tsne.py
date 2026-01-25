@@ -11,13 +11,13 @@ python visualize_tsne.py \
     --output /root/vis/tsne_mediterranean.png 
 
 python visualize_tsne.py \
-    --checkpoint /root/results/ckpts_small/best.ckpt \
+    --checkpoint /root/results/ckpts_small/best-v42.ckpt \
     --config configs/cpc_config.yaml \
     --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
     --output /root/vis/tsne_caribbean.png 
 
 python visualize_tsne.py \
-    --checkpoint /root/results/ckpts_small/best.ckpt \
+    --checkpoint /root/results/ckpts_small/best-v42.ckpt \
     --config configs/cpc_config.yaml \
     --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
     --output /root/vis/tsne_both.png 
