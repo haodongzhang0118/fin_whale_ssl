@@ -102,7 +102,7 @@ checkpoint:
 use_probes: true  # Enable offline evaluation probes (for labeled validation data)
 
 # Probe configuration
-probe_type: spt  # Options: 'sklearn' (PCA+CV) or 'spt' (stable-pretraining style, no PCA)
+probe_type: sklearn  # Options: 'sklearn' (PCA+CV) or 'spt' (stable-pretraining style, no PCA)
 probe_train_epochs: 100  # Training epochs for linear probe
 probe_lr: 0.1  # Learning rate (0.1 is standard for LARS optimizer)
 probe_weight_decay: 0.0  # Weight decay (0.0 is standard for SSL probes)
