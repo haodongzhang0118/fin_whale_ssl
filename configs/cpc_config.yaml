@@ -9,16 +9,16 @@ sample_rate: 16000
 exp_name: cpc_finwhale_smalldata
 
 # Data paths
-train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK" # SEGLVIK
+train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE" # SEGLVIK
 val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"  # Can be different from train
 
 results_path: "/root/results"
 
 timestep: 12
-hidden_dim: 256
+hidden_dim: 768
 num_epochs: 10
 batch_size: 128
-lr: 5.0e-5
+lr: 1.0e-4
 
 # Random seed for reproducibility
 seed: 42
@@ -26,8 +26,8 @@ seed: 42
 # Model configuration
 model:
   sample_rate: ${sample_rate}  # Fin-whale audio sample rate
-  enc_hidden: 512    # Encoder output dimension
-  sinc_channels: 512 # SincNet output channels
+  enc_hidden: 768   # Encoder output dimension
+  sinc_channels: 768 # SincNet output channels
   timestep: ${timestep}       # Number of future steps to predict
   tau: 0.07          # Initial temperature for InfoNCE loss (learnable if learnable_tau=true)
   normalize: false   # Whether to normalize features in loss (ssl-whales uses false)
@@ -68,7 +68,7 @@ data:
   train_data_folder: ${train_data_path}  # Training data path
   val_data_folder: ${val_data_path}      # Validation data path
   window_duration_sec: 8.0      # Window size in seconds
-  hop_duration_sec: 1.5          # Hop size: 4s = 50% overlap
+  hop_duration_sec: 2.0          # Hop size: 4s = 50% overlap
   sample_rate: ${sample_rate}    # Target sample rate
   batch_size: ${batch_size}                 # Batch size (adjust based on GPU memory)
   num_workers: 4                 # Number of data loading workers
