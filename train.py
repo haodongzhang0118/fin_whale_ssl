@@ -283,10 +283,11 @@ def create_datamodule(cfg):
     )
     
     # Create validation dataloader (supervised, with labels)
+    # Use 'both' split to combine train and val data
     print("\nCreating validation dataloader...")
     val_loader = create_supervised_dataloaders(
         data_folder=cfg.data.val_data_folder,  # Use val_data_folder
-        split="val",
+        split="both",  # Use both train and val splits
         window_duration_sec=cfg.data.window_duration_sec,
         sample_rate=cfg.data.sample_rate,
         batch_size=cfg.data.batch_size,

@@ -338,35 +338,72 @@ class SEGLVIKSupervisedDataset(Dataset):
         self.seed = seed
         
         split_folders = {
+            'train': 'trainset',
             'val': 'validset',
-            'test': 'testset'
+            'test': 'testset',
+            'both': ['trainset', 'validset']  # Use both train and val
         }
         
         if split not in split_folders:
-            raise ValueError(f"Supervised split must be 'val' or 'test'")
-        
-        split_folder = split_folders[split]
-        split_path = os.path.join(data_folder, split_folder)
-        self.audio_dir = os.path.join(split_path, 'flacs')
-        csv_path = os.path.join(split_path, 'detections.csv')
+            raise ValueError(f"Supervised split must be 'train', 'val', 'test', or 'both'")
         
         print(f"\n{'='*60}")
         print(f"SEGLVIK Supervised Dataset - {split.upper()}")
         print(f"{'='*60}")
         print(f"Data folder: {data_folder}")
-        print(f"Audio folder: {self.audio_dir}")
-        print(f"CSV: {csv_path}")
         
-        # Load annotations
+        # Handle 'both' split - load from both trainset and validset
         import pandas as pd
-        self.annotations = pd.read_csv(csv_path)
-        print(f"Annotations loaded: {len(self.annotations)} detections")
         
-        # Load audio files (support both .flac and .wav)
-        audio_files = glob(os.path.join(self.audio_dir, "*.flac")) + \
-                      glob(os.path.join(self.audio_dir, "*.wav"))
-        self.audio_file_dict = {os.path.basename(f): f for f in audio_files}
-        print(f"Audio files: {len(self.audio_file_dict)}")
+        if split == 'both':
+            split_folder_list = split_folders[split]
+            all_annotations = []
+            self.audio_file_dict = {}
+            
+            for split_folder in split_folder_list:
+                split_path = os.path.join(data_folder, split_folder)
+                audio_dir = os.path.join(split_path, 'flacs')
+                csv_path = os.path.join(split_path, 'detections.csv')
+                
+                print(f"\n  Loading from {split_folder}:")
+                print(f"    Audio folder: {audio_dir}")
+                print(f"    CSV: {csv_path}")
+                
+                # Load annotations
+                annots = pd.read_csv(csv_path)
+                all_annotations.append(annots)
+                print(f"    Annotations: {len(annots)}")
+                
+                # Load audio files
+                audio_files = glob(os.path.join(audio_dir, "*.flac")) + \
+                              glob(os.path.join(audio_dir, "*.wav"))
+                audio_dict = {os.path.basename(f): f for f in audio_files}
+                self.audio_file_dict.update(audio_dict)
+                print(f"    Audio files: {len(audio_dict)}")
+            
+            # Combine all annotations
+            self.annotations = pd.concat(all_annotations, ignore_index=True)
+            print(f"\n  Total annotations: {len(self.annotations)}")
+            print(f"  Total audio files: {len(self.audio_file_dict)}")
+            
+        else:
+            split_folder = split_folders[split]
+            split_path = os.path.join(data_folder, split_folder)
+            self.audio_dir = os.path.join(split_path, 'flacs')
+            csv_path = os.path.join(split_path, 'detections.csv')
+            
+            print(f"Audio folder: {self.audio_dir}")
+            print(f"CSV: {csv_path}")
+            
+            # Load annotations
+            self.annotations = pd.read_csv(csv_path)
+            print(f"Annotations loaded: {len(self.annotations)} detections")
+            
+            # Load audio files (support both .flac and .wav)
+            audio_files = glob(os.path.join(self.audio_dir, "*.flac")) + \
+                          glob(os.path.join(self.audio_dir, "*.wav"))
+            self.audio_file_dict = {os.path.basename(f): f for f in audio_files}
+            print(f"Audio files: {len(self.audio_file_dict)}")
         
         # Get sample rate
         first_file = list(self.audio_file_dict.values())[0]
@@ -735,13 +772,12 @@ class AnnotationBasedDataset(Dataset):
         split_folders = {
             'train': 'trainset',
             'val': 'validset',
-            'test': 'testset'
+            'test': 'testset',
+            'both': ['trainset', 'validset']  # Use both train and val
         }
         
         if split not in split_folders:
-            raise ValueError(f"Invalid split '{split}'. Must be 'train', 'val', or 'test'")
-        
-        split_folder = split_folders[split]
+            raise ValueError(f"Invalid split '{split}'. Must be 'train', 'val', 'test', or 'both'")
         
         print(f"\n{'='*80}")
         print(f"Annotation-Based Dataset - {split.upper()}")
@@ -751,79 +787,93 @@ class AnnotationBasedDataset(Dataset):
         self.samples = []
         total_annotations = 0
         
+        # Determine which split folders to use
+        if split == 'both':
+            split_folder_list = split_folders[split]
+            print(f"Loading from BOTH trainset and validset")
+        else:
+            split_folder_list = [split_folders[split]]
+        
         for dataset_folder in dataset_folders:
             dataset_name = os.path.basename(dataset_folder.rstrip('/'))
-            split_path = os.path.join(dataset_folder, split_folder)
             
-            # Look for annotations CSV (try different names)
-            csv_candidates = [
-                'annotations_8sec.csv',
-                'annotations_8s.csv',
-                'detections.csv'
-            ]
-            
-            csv_path = None
-            for csv_name in csv_candidates:
-                candidate = os.path.join(split_path, csv_name)
-                if os.path.exists(candidate):
-                    csv_path = candidate
-                    break
-            
-            if csv_path is None:
-                print(f"  ⚠️  No annotations found in {split_path}")
-                continue
-            
-            # Audio folder
-            audio_dir = os.path.join(split_path, 'flacs')
-            if not os.path.exists(audio_dir):
-                print(f"  ⚠️  Audio folder not found: {audio_dir}")
-                continue
-            
-            # Load annotations
-            annots = pd.read_csv(csv_path)
-            print(f"\n📂 {dataset_name}")
-            print(f"  CSV: {os.path.basename(csv_path)}")
-            print(f"  Annotations: {len(annots)}")
-            
-            # Build audio file dict
-            audio_files = glob(os.path.join(audio_dir, "*.flac")) + \
-                          glob(os.path.join(audio_dir, "*.wav"))
-            audio_file_dict = {os.path.basename(f): f for f in audio_files}
-            print(f"  Audio files: {len(audio_file_dict)}")
-            
-            # Get sample rate from first file
-            if len(audio_file_dict) > 0:
-                first_file = list(audio_file_dict.values())[0]
-                original_sample_rate = sf.info(first_file).samplerate
-                print(f"  Sample rate: {original_sample_rate} Hz")
-            else:
-                print(f"  ⚠️  No audio files found")
-                continue
-            
-            # Process each annotation
-            for idx, row in annots.iterrows():
-                filename = row['filename']
+            # Load from all split folders (trainset, validset, or both)
+            for split_folder in split_folder_list:
+                split_path = os.path.join(dataset_folder, split_folder)
                 
-                if filename not in audio_file_dict:
+                # Look for annotations CSV (try different names)
+                csv_candidates = [
+                    'annotations_8sec.csv',
+                    'annotations_8s.csv',
+                    'detections.csv'
+                ]
+                
+                csv_path = None
+                for csv_name in csv_candidates:
+                    candidate = os.path.join(split_path, csv_name)
+                    if os.path.exists(candidate):
+                        csv_path = candidate
+                        break
+                
+                if csv_path is None:
+                    print(f"  ⚠️  No annotations found in {split_path}")
                     continue
                 
-                file_path = audio_file_dict[filename]
-                begin_time = float(row['Begin Time (s)'])
-                end_time = float(row['End Time (s)'])
-                label = int(row['class'])
+                # Audio folder
+                audio_dir = os.path.join(split_path, 'flacs')
+                if not os.path.exists(audio_dir):
+                    print(f"  ⚠️  Audio folder not found: {audio_dir}")
+                    continue
                 
-                # Store annotation info
-                self.samples.append({
-                    'file_path': file_path,
-                    'begin_time': begin_time,
-                    'end_time': end_time,
-                    'label': label,
-                    'filename': filename,
-                    'dataset': dataset_name,
-                    'original_sr': original_sample_rate
-                })
-            
-            total_annotations += len(annots)
+                # Load annotations
+                annots = pd.read_csv(csv_path)
+                
+                if split == 'both':
+                    print(f"\n📂 {dataset_name} / {split_folder}")
+                else:
+                    print(f"\n📂 {dataset_name}")
+                print(f"  CSV: {os.path.basename(csv_path)}")
+                print(f"  Annotations: {len(annots)}")
+                
+                # Build audio file dict
+                audio_files = glob(os.path.join(audio_dir, "*.flac")) + \
+                              glob(os.path.join(audio_dir, "*.wav"))
+                audio_file_dict = {os.path.basename(f): f for f in audio_files}
+                print(f"  Audio files: {len(audio_file_dict)}")
+                
+                # Get sample rate from first file
+                if len(audio_file_dict) > 0:
+                    first_file = list(audio_file_dict.values())[0]
+                    original_sample_rate = sf.info(first_file).samplerate
+                    print(f"  Sample rate: {original_sample_rate} Hz")
+                else:
+                    print(f"  ⚠️  No audio files found")
+                    continue
+                
+                # Process each annotation
+                for idx, row in annots.iterrows():
+                    filename = row['filename']
+                    
+                    if filename not in audio_file_dict:
+                        continue
+                    
+                    file_path = audio_file_dict[filename]
+                    begin_time = float(row['Begin Time (s)'])
+                    end_time = float(row['End Time (s)'])
+                    label = int(row['class'])
+                    
+                    # Store annotation info
+                    self.samples.append({
+                        'file_path': file_path,
+                        'begin_time': begin_time,
+                        'end_time': end_time,
+                        'label': label,
+                        'filename': filename,
+                        'dataset': dataset_name,
+                        'original_sr': original_sample_rate
+                    })
+                
+                total_annotations += len(annots)
         
         print(f"\n{'='*80}")
         print(f"Total samples loaded: {len(self.samples)}")
