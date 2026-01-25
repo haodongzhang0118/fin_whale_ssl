@@ -27,7 +27,7 @@ seed: 42
 model:
   sample_rate: ${sample_rate}  # Fin-whale audio sample rate
   enc_hidden: 768   # Encoder output dimension
-  sinc_channels: 512 # SincNet output channels
+  sinc_channels: 768 # SincNet output channels
   timestep: ${timestep}       # Number of future steps to predict
   tau: 0.07          # Initial temperature for InfoNCE loss (learnable if learnable_tau=true)
   normalize: false   # Whether to normalize features in loss (ssl-whales uses false)
