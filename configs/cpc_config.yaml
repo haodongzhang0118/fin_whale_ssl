@@ -15,7 +15,8 @@ val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_W
 results_path: "/root/results"
 
 timestep: 8
-hidden_dim: 64
+enc_hidden: 128
+transformer_hidden: 64
 num_epochs: 10
 batch_size: 256
 lr: 1.0e-4
@@ -26,8 +27,8 @@ seed: 42
 # Model configuration
 model:
   sample_rate: ${sample_rate}  # Fin-whale audio sample rate
-  enc_hidden: 256   # Encoder output dimension
-  sinc_channels: 256 # SincNet output channels
+  enc_hidden: ${enc_hidden}   # Encoder output dimension
+  sinc_channels: ${enc_channels} # SincNet output channels
   timestep: ${timestep}       # Number of future steps to predict
   tau: 0.07          # Initial temperature for InfoNCE loss (learnable if learnable_tau=true)
   normalize: false   # Whether to normalize features in loss (ssl-whales uses false)
@@ -37,7 +38,7 @@ model:
   gru_hidden: ${hidden_dim}    # GRU hidden dimension
   
   # Transformer-specific parameters (used when backbone_type: transformer)
-  transformer_hidden: ${hidden_dim}    # Transformer hidden dimension (increased from 256)
+  transformer_hidden: ${transformer_hidden}    # Transformer hidden dimension (increased from 256)
   num_layers: 4             # Number of transformer layers (increased from 4)
   num_heads: 2               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
