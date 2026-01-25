@@ -677,3 +677,317 @@ def create_supervised_dataloaders(
     )
     
     return dataloader
+
+
+# ============= Annotation-based Dataset (for RESOURCES folder) =============
+
+class AnnotationBasedDataset(Dataset):
+    """
+    Dataset that loads samples directly from annotations_8sec.csv
+    
+    This dataset:
+    - Reads annotations_8sec.csv from RESOURCES/{dataset_name}/{split}set/
+    - For positive samples (class=1): expands the annotated time range to 8 seconds
+    - For negative samples (class=0): uses the full 8-second annotation
+    - Returns raw audio, label, and filename
+    
+    Perfect for evaluation with t-SNE visualization and downstream tasks.
+    
+    Args:
+        dataset_folders: List of paths to dataset folders (e.g., RESOURCES/SEGLVIK)
+        split: 'train', 'val', or 'test'
+        window_duration_sec: Target window duration (default: 8.0)
+        sample_rate: Target sample rate (default: 16000)
+        seed: Random seed for reproducibility
+    
+    Example:
+        >>> dataset = AnnotationBasedDataset(
+        ...     dataset_folders=['RESOURCES/SEGLVIK', 'RESOURCES/MEDITERRANEAN_FIN_WHALE'],
+        ...     split='val',
+        ...     window_duration_sec=8.0,
+        ...     sample_rate=16000
+        ... )
+    """
+    
+    def __init__(
+        self,
+        dataset_folders,
+        split="train",
+        window_duration_sec=8.0,
+        sample_rate=16000,
+        seed=42
+    ):
+        super().__init__()
+        
+        import pandas as pd
+        torch.manual_seed(seed)
+        
+        if isinstance(dataset_folders, str):
+            dataset_folders = [dataset_folders]
+        
+        self.dataset_folders = dataset_folders
+        self.split = split
+        self.window_duration_sec = window_duration_sec
+        self.target_sample_rate = sample_rate
+        self.seed = seed
+        
+        # Mapping split to folder name
+        split_folders = {
+            'train': 'trainset',
+            'val': 'validset',
+            'test': 'testset'
+        }
+        
+        if split not in split_folders:
+            raise ValueError(f"Invalid split '{split}'. Must be 'train', 'val', or 'test'")
+        
+        split_folder = split_folders[split]
+        
+        print(f"\n{'='*80}")
+        print(f"Annotation-Based Dataset - {split.upper()}")
+        print(f"{'='*80}")
+        
+        # Load all annotations from all datasets
+        self.samples = []
+        total_annotations = 0
+        
+        for dataset_folder in dataset_folders:
+            dataset_name = os.path.basename(dataset_folder.rstrip('/'))
+            split_path = os.path.join(dataset_folder, split_folder)
+            
+            # Look for annotations CSV (try different names)
+            csv_candidates = [
+                'annotations_8sec.csv',
+                'annotations_8s.csv',
+                'detections.csv'
+            ]
+            
+            csv_path = None
+            for csv_name in csv_candidates:
+                candidate = os.path.join(split_path, csv_name)
+                if os.path.exists(candidate):
+                    csv_path = candidate
+                    break
+            
+            if csv_path is None:
+                print(f"  ⚠️  No annotations found in {split_path}")
+                continue
+            
+            # Audio folder
+            audio_dir = os.path.join(split_path, 'flacs')
+            if not os.path.exists(audio_dir):
+                print(f"  ⚠️  Audio folder not found: {audio_dir}")
+                continue
+            
+            # Load annotations
+            annots = pd.read_csv(csv_path)
+            print(f"\n📂 {dataset_name}")
+            print(f"  CSV: {os.path.basename(csv_path)}")
+            print(f"  Annotations: {len(annots)}")
+            
+            # Build audio file dict
+            audio_files = glob(os.path.join(audio_dir, "*.flac")) + \
+                          glob(os.path.join(audio_dir, "*.wav"))
+            audio_file_dict = {os.path.basename(f): f for f in audio_files}
+            print(f"  Audio files: {len(audio_file_dict)}")
+            
+            # Get sample rate from first file
+            if len(audio_file_dict) > 0:
+                first_file = list(audio_file_dict.values())[0]
+                original_sample_rate = sf.info(first_file).samplerate
+                print(f"  Sample rate: {original_sample_rate} Hz")
+            else:
+                print(f"  ⚠️  No audio files found")
+                continue
+            
+            # Process each annotation
+            for idx, row in annots.iterrows():
+                filename = row['filename']
+                
+                if filename not in audio_file_dict:
+                    continue
+                
+                file_path = audio_file_dict[filename]
+                begin_time = float(row['Begin Time (s)'])
+                end_time = float(row['End Time (s)'])
+                label = int(row['class'])
+                
+                # Store annotation info
+                self.samples.append({
+                    'file_path': file_path,
+                    'begin_time': begin_time,
+                    'end_time': end_time,
+                    'label': label,
+                    'filename': filename,
+                    'dataset': dataset_name,
+                    'original_sr': original_sample_rate
+                })
+            
+            total_annotations += len(annots)
+        
+        print(f"\n{'='*80}")
+        print(f"Total samples loaded: {len(self.samples)}")
+        
+        # Count by label
+        num_pos = sum(1 for s in self.samples if s['label'] == 1)
+        num_neg = len(self.samples) - num_pos
+        print(f"  Positive (class=1): {num_pos}")
+        print(f"  Negative (class=0): {num_neg}")
+        print(f"{'='*80}\n")
+    
+    def __len__(self):
+        return len(self.samples)
+    
+    def __getitem__(self, idx):
+        sample_info = self.samples[idx]
+        
+        file_path = sample_info['file_path']
+        begin_time = sample_info['begin_time']
+        end_time = sample_info['end_time']
+        label = sample_info['label']
+        filename = sample_info['filename']
+        original_sr = sample_info['original_sr']
+        
+        # Get audio length
+        audio_info = sf.info(file_path)
+        audio_length_sec = audio_info.frames / original_sr
+        
+        target_duration = self.window_duration_sec
+        
+        # For positive samples (class=1): expand to 8 seconds centered on annotation
+        if label == 1:
+            # Center the annotation within the target window
+            annotation_duration = end_time - begin_time
+            annotation_center = (begin_time + end_time) / 2.0
+            
+            # Calculate window boundaries
+            window_start = annotation_center - target_duration / 2.0
+            window_end = annotation_center + target_duration / 2.0
+            
+            # Adjust if out of bounds
+            if window_start < 0:
+                window_start = 0
+                window_end = target_duration
+            elif window_end > audio_length_sec:
+                window_end = audio_length_sec
+                window_start = max(0, audio_length_sec - target_duration)
+        
+        # For negative samples (class=0): use the annotated 8-second window as-is
+        else:
+            window_start = begin_time
+            window_end = end_time
+            
+            # Ensure it's 8 seconds (in case annotation is slightly different)
+            if window_end - window_start < target_duration:
+                # Extend to 8 seconds if possible
+                needed = target_duration - (window_end - window_start)
+                window_end = min(audio_length_sec, window_end + needed / 2)
+                window_start = max(0, window_start - needed / 2)
+        
+        # Convert to samples
+        start_sample = int(window_start * original_sr)
+        num_frames = int((window_end - window_start) * original_sr)
+        
+        # Load audio
+        audio_np, sr = sf.read(
+            file_path,
+            start=start_sample,
+            frames=num_frames,
+            dtype='float32'
+        )
+        
+        # Convert to torch tensor
+        audio = torch.from_numpy(audio_np)
+        
+        # Convert to mono if stereo
+        if audio.dim() > 1 and audio.shape[-1] > 1:
+            audio = audio.mean(dim=-1)
+        
+        # Resample if needed
+        if sr != self.target_sample_rate:
+            resampler = torchaudio.transforms.Resample(sr, self.target_sample_rate)
+            audio = resampler(audio)
+        
+        # Ensure correct length (pad or trim)
+        expected_length = int(self.window_duration_sec * self.target_sample_rate)
+        if audio.shape[0] < expected_length:
+            # Pad with zeros
+            pad_size = expected_length - audio.shape[0]
+            audio = torch.nn.functional.pad(audio, (0, pad_size))
+        elif audio.shape[0] > expected_length:
+            # Trim
+            audio = audio[:expected_length]
+        
+        return {
+            'raw_audio': audio,
+            'label': torch.tensor(label, dtype=torch.long),
+            'file_name': filename,
+        }
+
+
+def create_annotation_dataloaders(
+    dataset_folders,
+    split="val",
+    window_duration_sec=8.0,
+    sample_rate=16000,
+    batch_size=32,
+    num_workers=4,
+    shuffle=False,
+    drop_last=False,
+    pin_memory=True,
+    seed=42,
+):
+    """
+    Create DataLoader for annotation-based dataset
+    
+    Args:
+        dataset_folders: List of dataset folder paths or single path
+                        e.g., ['RESOURCES/SEGLVIK', 'RESOURCES/MEDITERRANEAN_FIN_WHALE']
+                        or 'RESOURCES/SEGLVIK'
+        split: 'train', 'val', or 'test'
+        window_duration_sec: Window size in seconds (default: 8.0)
+        sample_rate: Target sample rate (default: 16000)
+        batch_size: Batch size
+        num_workers: Number of worker processes
+        shuffle: Whether to shuffle data
+        drop_last: Whether to drop last incomplete batch
+        pin_memory: Whether to pin memory
+        seed: Random seed
+    
+    Returns:
+        DataLoader
+    
+    Example:
+        >>> # Single dataset
+        >>> loader = create_annotation_dataloaders(
+        ...     dataset_folders='RESOURCES/SEGLVIK',
+        ...     split='val',
+        ...     batch_size=64
+        ... )
+        
+        >>> # Multiple datasets
+        >>> loader = create_annotation_dataloaders(
+        ...     dataset_folders=['RESOURCES/SEGLVIK', 'RESOURCES/MEDITERRANEAN_FIN_WHALE'],
+        ...     split='val',
+        ...     batch_size=64
+        ... )
+    """
+    
+    dataset = AnnotationBasedDataset(
+        dataset_folders=dataset_folders,
+        split=split,
+        window_duration_sec=window_duration_sec,
+        sample_rate=sample_rate,
+        seed=seed
+    )
+    
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        drop_last=drop_last,
+        pin_memory=pin_memory,
+    )
+    
+    return dataloader

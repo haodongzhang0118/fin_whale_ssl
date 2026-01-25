@@ -2,7 +2,27 @@
 """
 Visualize embeddings using t-SNE
 Simple script to visualize CPC learned representations
+
+Sample run:
+python visualize_tsne.py \
+    --checkpoint /root/results/ckpts_small/best.ckpt \
+    --config configs/cpc_config.yaml \
+    --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE \
+    --output tsne_mediterranean.png \
+
+python visualize_tsne.py \
+    --checkpoint /root/results/ckpts_small/best.ckpt \
+    --config configs/cpc_config.yaml \
+    --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
+    --output tsne_caribbean.png \
+
+python visualize_tsne.py \
+    --checkpoint /root/results/ckpts_small/best.ckpt \
+    --config configs/cpc_config.yaml \
+    --dataset_folders /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE /root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE \
+    --output tsne_both.png \
 """
+
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,7 +31,7 @@ import argparse
 
 # Import from eval.py - reuse tested functions!
 from eval import load_model_from_checkpoint, extract_embeddings
-from dataloader import create_supervised_dataloaders
+from dataloader import create_annotation_dataloaders
 
 
 def compute_tsne(embeddings, perplexity=30, learning_rate=200, n_iter=1000):
@@ -98,8 +118,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
         Examples:
-        # Basic usage
+        # Basic usage (uses config's val_data_folder)
         python visualize_tsne.py --checkpoint results/cpc_finwhale_smalldata/best.ckpt
+        
+        # Single dataset
+        python visualize_tsne.py --checkpoint best.ckpt --dataset_folders RESOURCES/SEGLVIK
+        
+        # Multiple datasets (combined)
+        python visualize_tsne.py --checkpoint best.ckpt --dataset_folders RESOURCES/SEGLVIK RESOURCES/MEDITERRANEAN_FIN_WHALE
         
         # With custom output path
         python visualize_tsne.py --checkpoint best.ckpt --output my_tsne.png
@@ -122,10 +148,12 @@ def main():
         help='Path to config file (default: configs/cpc_config.yaml)'
     )
     parser.add_argument(
-        '--data_folder',
+        '--dataset_folders',
         type=str,
+        nargs='+',
         default=None,
-        help='Path to data folder (default: use val_data_path from config)'
+        help='Path(s) to dataset folder(s) (default: use val_data_path from config). '
+             'Can specify multiple: --dataset_folders RESOURCES/SEGLVIK RESOURCES/MEDITERRANEAN_FIN_WHALE'
     )
     parser.add_argument(
         '--output',
@@ -172,21 +200,30 @@ def main():
     module, cfg = load_model_from_checkpoint(args.checkpoint, args.config, device)
     print(f"✓ Model loaded on {device}")
     
-    # Determine data folder
-    data_folder = args.data_folder if args.data_folder else cfg.data.val_data_folder
+    # Determine dataset folders
+    if args.dataset_folders:
+        dataset_folders = args.dataset_folders
+    else:
+        # Use config value (could be single or list)
+        dataset_folders = cfg.data.val_data_folder
     
-    # Create dataloader
-    print(f"\n[2/3] Creating dataloader...")
-    print(f"Data folder: {data_folder}")
-    dataloader = create_supervised_dataloaders(
-        data_folder=data_folder,
+    # Create dataloader using annotation-based dataset
+    print(f"\n[2/3] Creating annotation-based dataloader...")
+    if isinstance(dataset_folders, list):
+        print(f"Dataset folders: {len(dataset_folders)} datasets")
+        for folder in dataset_folders:
+            print(f"  - {folder}")
+    else:
+        print(f"Dataset folder: {dataset_folders}")
+    
+    dataloader = create_annotation_dataloaders(
+        dataset_folders=dataset_folders,
         split='val',
         window_duration_sec=cfg.data.window_duration_sec,
         sample_rate=cfg.sample_rate,
         batch_size=64,
         num_workers=cfg.data.num_workers,
         seed=cfg.seed,
-        tfr_by_pulse=cfg.data.get('tfr_by_pulse', 5),
         shuffle=False,
         drop_last=False,
     )
