@@ -78,27 +78,42 @@ class CPCEncoder(nn.Module):
     """
     def __init__(self, in_chan=512, enc_hidden=512):
         super().__init__()
+        # self.encoder = nn.Sequential(
+        #     # Layer 1: stride=4 (4x compression)
+        #     nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
+        #     BRN1d(enc_hidden),
+        #     nn.ReLU(inplace=True),
+        #     # Layer 2: stride=4 (16x compression)
+        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
+        #     BRN1d(enc_hidden),
+        #     nn.ReLU(inplace=True),
+        #     # Layer 3: stride=2 (32x compression)
+        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
+        #     BRN1d(enc_hidden),
+        #     nn.ReLU(inplace=True),
+        #     # Layer 4: stride=2 (64x compression)
+        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
+        #     BRN1d(enc_hidden),
+        #     nn.ReLU(inplace=True),
+        #     # Layer 5: stride=1 (maintain 64x)
+        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
+        #     BRN1d(enc_hidden),
+        #     nn.ReLU(inplace=True),
+        # )
+
         self.encoder = nn.Sequential(
-            # Layer 1: stride=4 (4x compression)
-            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
-            BRN1d(enc_hidden),
+            nn.Conv1d(in_chan, 512, kernel_size=8, stride=5, padding=2, bias=False),
+            BRN1d(512),
             nn.ReLU(inplace=True),
-            # Layer 2: stride=4 (16x compression)
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
-            BRN1d(enc_hidden),
+            nn.Conv1d(512, 512, kernel_size=4, stride=3, padding=1, bias=False),
+            BRN1d(512),
             nn.ReLU(inplace=True),
-            # Layer 3: stride=2 (32x compression)
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-            BRN1d(enc_hidden),
+            nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
+            BRN1d(512),
             nn.ReLU(inplace=True),
-            # Layer 4: stride=2 (64x compression)
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
-            # Layer 5: stride=1 (maintain 64x)
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
+            nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
+            BRN1d(512),
+            nn.ReLU(inplace=True)
         )
 
     def forward(self, x):

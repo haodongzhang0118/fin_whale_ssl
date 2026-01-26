@@ -5,30 +5,31 @@
 backbone_type: transformer  # Options: 'gru', 'transformer'
 
 # Experiment name
-sample_rate: 16000
+sample_rate: 3200
 exp_name: cpc_finwhale_smalldata
 
 # Data paths
 # SEGLVIK
 # MEDITERRANEAN_FIN_WHALE
 # CARABBEAN_HUMPBACK_WHALE
-train_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK" # SEGLVIK
+train_data_path: "/root/fin_whale_1/RESOURCES/RESOURCES_SEGLVIK_NEW_ANNOTS" # SEGLVIK
 
 # Validation data: Use list for multiple datasets, or single path for one dataset
-val_data_path:  # Evaluate on BOTH Mediterranean + Caribbean (all splits)
-  - "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"
-  - "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE"
+# val_data_path:  # Evaluate on BOTH Mediterranean + Caribbean (all splits)
+#   - "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"
+#   - "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE"
 
 # Single dataset examples (uncomment to use):
+val_data_path: "/root/fin_whale_1/RESOURCES/RESOURCES_SEGLVIK_NEW_ANNOTS"
 # val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"  # Mediterranean only
 # val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE"  # Caribbean only
 
 results_path: "/root/results"
 
-timestep: 8
-enc_hidden: 128
-transformer_hidden: 64
-num_epochs: 10
+timestep: 12
+enc_hidden: 512
+transformer_hidden: 256
+num_epochs: 60
 batch_size: 512
 lr: 1.0e-3
 
@@ -50,12 +51,12 @@ model:
   
   # Transformer-specific parameters (used when backbone_type: transformer)
   transformer_hidden: ${transformer_hidden}    # Transformer hidden dimension (increased from 256)
-  num_layers: 8             # Number of transformer layers (increased from 4)
-  num_heads: 2               # Number of attention heads (must divide transformer_hidden)
+  num_layers: 4             # Number of transformer layers (increased from 4)
+  num_heads: 8               # Number of attention heads (must divide transformer_hidden)
   mlp_ratio: 4.0             # MLP hidden dim ratio (default from stable-pretraining)
   drop_path: 0.0             # Stochastic depth rate (default from stable-pretraining)
-  attn_drop: 0.1             # Attention dropout (default from stable-pretraining)
-  proj_drop: 0.1             # Projection dropout (default from stable-pretraining)
+  attn_drop: 0.0             # Attention dropout (default from stable-pretraining)
+  proj_drop: 0.0             # Projection dropout (default from stable-pretraining)
   pos_encoding: sinusoidal   # Positional encoding: 'sinusoidal' or 'learnable'
 
 # Optimizer configuration
@@ -79,14 +80,14 @@ optim:
 data:
   train_data_folder: ${train_data_path}  # Training data path
   val_data_folder: ${val_data_path}      # Validation data path
-  window_duration_sec: 8.0      # Window size in seconds
-  hop_duration_sec: 8.0          # Hop size: 4s = 50% overlap
+  window_duration_sec: 3.0      # Window size in seconds
+  hop_duration_sec: 0.5          # Hop size: 4s = 50% overlap
   sample_rate: ${sample_rate}    # Target sample rate
   batch_size: ${batch_size}                 # Batch size (adjust based on GPU memory)
   num_workers: 4                 # Number of data loading workers
   shuffle_train: true            # Shuffle training data
   shuffle_val: false             # Don't shuffle validation data
-  train_data_fraction: 0.4       # Fraction of training data to use (0.1 = 10%, 1.0 = 100%)
+  train_data_fraction: 1.0       # Fraction of training data to use (0.1 = 10%, 1.0 = 100%)
 
 # Trainer configuration
 trainer:

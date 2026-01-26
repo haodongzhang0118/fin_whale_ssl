@@ -12,7 +12,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from backbone import cpc_backbone, cpc_backbone_transformer
 from loss import CPCLoss
 from forward import cpc_forward
-from dataloader import create_dataloaders, create_annotation_dataloaders
+from dataloader import create_dataloaders, create_supervised_dataloaders
 from SklearnOfflineProbe import SklearnOfflineProbe
 from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
@@ -282,26 +282,25 @@ def create_datamodule(cfg):
         data_fraction=cfg.data.get("train_data_fraction", 1.0),
     )
     
-    # Create validation dataloader (annotation-based, with labels)
-    # Use 'all' split to combine train, val, and test data
+    # Create validation dataloader (supervised, with labels and data augmentation)
+    # Use 'test' split for evaluation
     print("\nCreating validation dataloader...")
-    val_data_folders = cfg.data.val_data_folder
+    val_data_folder = cfg.data.val_data_folder
     
     # Print dataset info
-    if isinstance(val_data_folders, list):
-        print(f"Using {len(val_data_folders)} validation datasets:")
-        for i, folder in enumerate(val_data_folders, 1):
-            dataset_name = folder.split('/')[-1]
-            print(f"  {i}. {dataset_name}")
+    if isinstance(val_data_folder, list):
+        print(f"⚠️  Warning: Multiple datasets not supported for supervised dataloader")
+        print(f"Using first dataset: {val_data_folder[0].split('/')[-1]}")
+        val_data_folder = val_data_folder[0]
     else:
-        dataset_name = val_data_folders.split('/')[-1] if isinstance(val_data_folders, str) else val_data_folders
+        dataset_name = val_data_folder.split('/')[-1] if isinstance(val_data_folder, str) else val_data_folder
         print(f"Using validation dataset: {dataset_name}")
     
-    print(f"Split: all (train+val+test combined)")
+    print(f"Split: test")
     
-    val_loader = create_annotation_dataloaders(
-        dataset_folders=val_data_folders,  # Support both single path and list
-        split="all",  # Use all splits (train, val, test)
+    val_loader = create_supervised_dataloaders(
+        data_folder=val_data_folder,  # Single dataset path
+        split="test",  # Use test split for evaluation
         window_duration_sec=cfg.data.window_duration_sec,
         sample_rate=cfg.data.sample_rate,
         batch_size=cfg.data.batch_size,
