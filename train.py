@@ -285,8 +285,22 @@ def create_datamodule(cfg):
     # Create validation dataloader (annotation-based, with labels)
     # Use 'all' split to combine train, val, and test data
     print("\nCreating validation dataloader...")
+    val_data_folders = cfg.data.val_data_folder
+    
+    # Print dataset info
+    if isinstance(val_data_folders, list):
+        print(f"Using {len(val_data_folders)} validation datasets:")
+        for i, folder in enumerate(val_data_folders, 1):
+            dataset_name = folder.split('/')[-1]
+            print(f"  {i}. {dataset_name}")
+    else:
+        dataset_name = val_data_folders.split('/')[-1] if isinstance(val_data_folders, str) else val_data_folders
+        print(f"Using validation dataset: {dataset_name}")
+    
+    print(f"Split: all (train+val+test combined)")
+    
     val_loader = create_annotation_dataloaders(
-        dataset_folders=cfg.data.val_data_folder,  # Use val_data_folder
+        dataset_folders=val_data_folders,  # Support both single path and list
         split="all",  # Use all splits (train, val, test)
         window_duration_sec=cfg.data.window_duration_sec,
         sample_rate=cfg.data.sample_rate,
