@@ -102,17 +102,17 @@ class CPCEncoder(nn.Module):
         # )
 
         self.encoder = nn.Sequential(
-            nn.Conv1d(in_chan, 512, kernel_size=8, stride=5, padding=2, bias=False),
-            BRN1d(512),
+            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=5, padding=2, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            nn.Conv1d(512, 512, kernel_size=4, stride=3, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=3, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True),
-            nn.Conv1d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(512),
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
+            BRN1d(enc_hidden),
             nn.ReLU(inplace=True)
         )
 
