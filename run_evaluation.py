@@ -24,8 +24,9 @@ from eval import evaluate_checkpoint
 # =============================================================================
 
 # Paths
-CHECKPOINT_PATH = "/root/results/current/short-best.ckpt"
-DATASET_FOLDERS = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"  # Single dataset
+CHECKPOINT_PATH = "/root/results/ckpts_small/best-v1.ckpt"
+DATASET_FOLDERS_1 = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_WHALE"  # Single dataset
+DATASET_FOLDERS_2 = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE"  # Single dataset
 CONFIG_PATH = "configs/cpc_config.yaml"
 
 # Evaluation settings
@@ -52,7 +53,22 @@ if __name__ == "__main__":
     metrics = evaluate_checkpoint(
         checkpoint_path=CHECKPOINT_PATH,
         config_path=CONFIG_PATH,
-        dataset_folders=DATASET_FOLDERS,  # ✅ Changed from data_folder
+        dataset_folders=DATASET_FOLDERS_1,  # ✅ Changed from data_folder
+        split=SPLIT,
+        batch_size=BATCH_SIZE,
+        num_workers=NUM_WORKERS,
+        sample_rate=SAMPLE_RATE,
+        window_duration=WINDOW_DURATION,
+        n_splits=N_SPLITS,
+        n_components=N_COMPONENTS,
+        seed=SEED,
+        device=DEVICE,
+    )
+
+    metrics_2 = evaluate_checkpoint(
+        checkpoint_path=CHECKPOINT_PATH,
+        config_path=CONFIG_PATH,
+        dataset_folders=DATASET_FOLDERS_2,  # ✅ Changed from data_folder
         split=SPLIT,
         batch_size=BATCH_SIZE,
         num_workers=NUM_WORKERS,
