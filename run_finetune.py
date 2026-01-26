@@ -17,7 +17,7 @@ MEDITERRANEAN = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/MEDITERRANEAN_FIN_
 CARIBBEAN = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE"
 
 # Choose dataset
-DATASET = MEDITERRANEAN  # or CARIBBEAN
+DATASET = CARIBBEAN  # or CARIBBEAN
 
 # Device
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -32,7 +32,7 @@ EXPERIMENTS = {
         "freeze_backbone": True,
         "head_type": "linear",
         "num_epochs": 50,
-        "learning_rate": 1e-3,
+        "learning_rate": 1e-4,
         "output_dir": "results/finetune/frozen_linear",
     },
     
@@ -43,7 +43,7 @@ EXPERIMENTS = {
         "hidden_dim": 256,
         "dropout": 0.3,
         "num_epochs": 50,
-        "learning_rate": 1e-3,
+        "learning_rate": 1e-4,
         "output_dir": "results/finetune/frozen_mlp",
     },
     
@@ -52,7 +52,7 @@ EXPERIMENTS = {
         "freeze_backbone": False,
         "head_type": "linear",
         "num_epochs": 100,
-        "learning_rate": 1e-4,  # Lower LR for full fine-tuning
+        "learning_rate": 1e-6,  # Lower LR for full fine-tuning
         "output_dir": "results/finetune/full_linear",
     },
     
@@ -63,7 +63,7 @@ EXPERIMENTS = {
         "hidden_dim": 256,
         "dropout": 0.3,
         "num_epochs": 100,
-        "learning_rate": 1e-4,
+        "learning_rate": 1e-6,
         "output_dir": "results/finetune/full_mlp",
     },
 }
