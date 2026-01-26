@@ -86,7 +86,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--dataset',
         type=str,
-        default=MEDITERRANEAN,
+        default=DATASET,
         help='Dataset path'
     )
     
