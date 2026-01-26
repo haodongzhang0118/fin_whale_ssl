@@ -30,7 +30,7 @@ timestep: 12
 enc_hidden: 512
 transformer_hidden: 256
 num_epochs: 60
-batch_size: 512
+batch_size: 2048
 lr: 1.0e-3
 
 # Random seed for reproducibility
