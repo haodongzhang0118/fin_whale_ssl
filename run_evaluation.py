@@ -30,7 +30,7 @@ DATASET_FOLDERS_2 = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMP
 CONFIG_PATH = "configs/cpc_config.yaml"
 
 # Evaluation settings
-SPLIT = "val"  # Options: 'train', 'val', 'test', 'both' (train+val), 'all' (train+val+test)
+SPLIT = "train"  # Options: 'train', 'val', 'test', 'both' (train+val), 'all' (train+val+test)
 BATCH_SIZE = 512
 NUM_WORKERS = 4
 SAMPLE_RATE = 16000
