@@ -24,7 +24,7 @@ from eval import evaluate_checkpoint
 # =============================================================================
 
 # Paths
-CHECKPOINT_PATH = "/root/results/ckpts_small/best-v53.ckpt"
+CHECKPOINT_PATH = "/root/results/current/short-best.ckpt"
 DATASET_FOLDERS = "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/CARABBEAN_HUMPBACK_WHALE"  # Single dataset
 CONFIG_PATH = "configs/cpc_config.yaml"
 
