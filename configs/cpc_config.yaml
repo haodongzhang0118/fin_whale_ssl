@@ -27,7 +27,7 @@ val_data_path: "/root/ICML_2026_FIN_HUMPBACK_WHALE/RESOURCES/SEGLVIK"
 results_path: "/root/results"
 
 timestep: 12  # Number of future steps to predict (k_end)
-k_start: 1    # Starting step for prediction (1 = predict from t+1, 5 = predict from t+5)
+k_start: 5    # Starting step for prediction (1 = predict from t+1, 5 = predict from t+5)
               # Will predict from t+k_start to t+timestep
               # Example: k_start=5, timestep=12 → predict t+5, t+6, ..., t+12 (8 steps)
 enc_hidden: 128
