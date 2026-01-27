@@ -16,7 +16,6 @@ from dataloader import create_dataloaders, create_supervised_dataloaders
 from SklearnOfflineProbe import SklearnOfflineProbe
 from OfflineProb import OfflineProbe  # stable-pretraining style offline probe
 from OfflineKNN import OfflineKNN
-from monitor_tau import TauMonitor
 
 
 def create_cpc_module(cfg, datamodule):
@@ -59,17 +58,20 @@ def create_cpc_module(cfg, datamodule):
         context_dim = cfg.model.gru_hidden
     
     # Create prediction heads (one per future time step)
+    # Note: We create 'timestep' heads, but may only use a subset based on k_start
+    # Wk[0] predicts t+k_start, Wk[1] predicts t+k_start+1, ..., Wk[timestep-k_start] predicts t+timestep
+    k_start = cfg.model.get("k_start", 1)  # Default: start from t+1
+    num_prediction_steps = cfg.model.timestep - k_start + 1  # Number of steps to predict
+    
     Wk = nn.ModuleList([
         nn.Linear(context_dim, cfg.model.enc_hidden) 
-        for _ in range(cfg.model.timestep)
+        for _ in range(num_prediction_steps)
     ])
     
+    print(f"[CPC] Predicting from t+{k_start} to t+{cfg.model.timestep} ({num_prediction_steps} steps)")
+    
     # Create CPC loss
-    cpc_loss = CPCLoss(
-        tau=cfg.model.tau,
-        normalize=cfg.model.normalize,
-        learnable_tau=cfg.model.get("learnable_tau", True)
-    )
+    cpc_loss = CPCLoss(tau=cfg.model.tau)
     
     # Calculate total training steps
     batches_per_epoch = len(datamodule.train_dataloader())
@@ -96,6 +98,7 @@ def create_cpc_module(cfg, datamodule):
         Wk=Wk,
         cpc_loss=cpc_loss,
         timestep=cfg.model.timestep,
+        k_start=k_start,  # Pass k_start to forward function
         optim={
             "optimizer": cfg.optim.optimizer,
             "scheduler": {
@@ -160,12 +163,6 @@ def create_callbacks(cfg):
     # Learning rate monitor
     lr_monitor = LearningRateMonitor(logging_interval='step')
     callbacks.append(lr_monitor)
-    
-    # Temperature (tau) monitor for learnable temperature
-    if cfg.model.get("learnable_tau", False):
-        tau_monitor = TauMonitor(log_every_n_steps=100)
-        callbacks.append(tau_monitor)
-        print("✅ Added TauMonitor (learnable temperature tracking)")
     
     # Add evaluation probes if configured
     if cfg.get("use_probes", True):  # Default to True

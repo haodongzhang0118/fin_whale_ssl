@@ -68,7 +68,7 @@ class CPCEncoder(nn.Module):
     Downsamples the SincNet output to produce latent representations
     
     Architecture with 6 conv layers for aggressive downsampling:
-    - Total encoder downsampling: 4 × 4 × 2 × 2 × 1 × 1 = 64x
+    - Total encoder downsampling: 5 × 4 × 4 × 2 × 2 = 320x
     - Combined with SincBlock (5x): 320x total
     - For 16000 Hz, 8s audio: 128000 samples → 400 time steps
     
@@ -78,43 +78,47 @@ class CPCEncoder(nn.Module):
     """
     def __init__(self, in_chan=512, enc_hidden=512):
         super().__init__()
+        self.encoder = nn.Sequential(
+            # Layer 1: stride=5  (5x)
+            nn.Conv1d(in_chan, enc_hidden, kernel_size=10, stride=5, padding=10//2, bias=False),
+            BRN1d(enc_hidden),
+            nn.ReLU(inplace=True),
+
+            # Layer 2: stride=4  (20x)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=8//2, bias=False),
+            BRN1d(enc_hidden),
+            nn.ReLU(inplace=True),
+
+            # Layer 3: stride=4  (80x)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=8//2, bias=False),
+            BRN1d(enc_hidden),
+            nn.ReLU(inplace=True),
+
+            # Layer 4: stride=2  (160x)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=4//2, bias=False),
+            BRN1d(enc_hidden),
+            nn.ReLU(inplace=True),
+
+            # Layer 5: stride=2  (320x)
+            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=4//2, bias=False),
+            BRN1d(enc_hidden),
+            nn.ReLU(inplace=True),
+        )
+
         # self.encoder = nn.Sequential(
-        #     # Layer 1: stride=4 (4x compression)
-        #     nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
+        #     nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=5, padding=2, bias=False),
         #     BRN1d(enc_hidden),
         #     nn.ReLU(inplace=True),
-        #     # Layer 2: stride=4 (16x compression)
-        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=8, stride=4, padding=2, bias=False),
+        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=3, padding=1, bias=False),
         #     BRN1d(enc_hidden),
         #     nn.ReLU(inplace=True),
-        #     # Layer 3: stride=2 (32x compression)
-        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-        #     BRN1d(enc_hidden),
-        #     nn.ReLU(inplace=True),
-        #     # Layer 4: stride=2 (64x compression)
-        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=2, padding=1, bias=False),
-        #     BRN1d(enc_hidden),
-        #     nn.ReLU(inplace=True),
-        #     # Layer 5: stride=1 (maintain 64x)
         #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
         #     BRN1d(enc_hidden),
         #     nn.ReLU(inplace=True),
+        #     nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
+        #     BRN1d(enc_hidden),
+        #     nn.ReLU(inplace=True)
         # )
-
-        self.encoder = nn.Sequential(
-            nn.Conv1d(in_chan, enc_hidden, kernel_size=8, stride=5, padding=2, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=4, stride=3, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True),
-            nn.Conv1d(enc_hidden, enc_hidden, kernel_size=3, stride=1, padding=1, bias=False),
-            BRN1d(enc_hidden),
-            nn.ReLU(inplace=True)
-        )
 
     def forward(self, x):
         return self.encoder(x)
@@ -147,7 +151,7 @@ class CPCBackbone(nn.Module):
         # SincNet front-end for learnable filterbank
         self.sinc_block = SincBlock(
             out_channels=sinc_channels,
-            stride=5,
+            stride=1,
             sample_rate=sample_rate,
             return_abs=False,
             learnable_filters=False,

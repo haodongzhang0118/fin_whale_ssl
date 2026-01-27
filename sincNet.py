@@ -25,24 +25,22 @@ class PSwish(nn.Module):
         return x * self.p_swish_alpha * torch.sigmoid(self.p_swish_beta * x)
     
 class SincBlock(nn.Module):
-    def __init__(self, out_channels=512, stride=5,
+    def __init__(self, out_channels=512, stride=1,
                  sample_rate=3200, return_abs=False,
                  learnable_filters=False, padding="same"):
         super().__init__()
 
-        kernel_size = sinc_kernel_size(sample_rate)
-
         self.sinc = SincConv(
             out_channels=out_channels,
-            kernel_size=kernel_size,         
+            kernel_size=251,         
             in_channels=1,
             stride=stride,                   
             dilation=1,
             padding=padding,                 
             padding_mode="reflect",
             sample_rate=sample_rate,
-            min_low_hz=50,
-            min_band_hz=None,
+            min_low_hz=1,
+            min_band_hz=10,
             learnable_filters=learnable_filters,
             apply_window_to_root=False,
             return_abs=return_abs,

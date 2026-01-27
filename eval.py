@@ -152,17 +152,16 @@ def load_model_from_checkpoint(checkpoint_path, config_path, device):
         context_dim = cfg.model.gru_hidden
     
     # Create prediction heads
+    k_start = cfg.model.get("k_start", 1)  # Default: start from t+1
+    num_prediction_steps = cfg.model.timestep - k_start + 1
+    
     Wk = nn.ModuleList([
         nn.Linear(context_dim, cfg.model.enc_hidden) 
-        for _ in range(cfg.model.timestep)
+        for _ in range(num_prediction_steps)
     ])
     
     # Create CPC loss
-    cpc_loss = CPCLoss(
-        tau=cfg.model.tau,
-        normalize=cfg.model.normalize,
-        learnable_tau=cfg.model.get("learnable_tau", False)  # Use False for eval to load trained value
-    )
+    cpc_loss = CPCLoss(tau=cfg.model.tau)
     
     # Create module
     module = spt.Module(
@@ -171,6 +170,7 @@ def load_model_from_checkpoint(checkpoint_path, config_path, device):
         Wk=Wk,
         cpc_loss=cpc_loss,
         timestep=cfg.model.timestep,
+        k_start=k_start,  # Pass k_start for evaluation
         optim=cfg.optim,
         hparams={"model": cfg.model},
     )

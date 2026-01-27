@@ -17,34 +17,12 @@ class CPCLoss(nn.Module):
     between predictions and future observations.
     
     Args:
-        tau (float): Initial temperature parameter for softmax (default: 0.07)
-        normalize (bool): Whether to L2-normalize features (default: True)
-        learnable_tau (bool): Whether tau is a learnable parameter (default: True)
+        tau (float): Temperature parameter for softmax (default: 0.07)
     """
-    def __init__(self, tau=0.07, normalize=True, learnable_tau=True):
+    def __init__(self, tau=0.07):
         super().__init__()
-        self.normalize = normalize
-        self.learnable_tau = learnable_tau
-        
-        if learnable_tau:
-            # Store log(tau) as learnable parameter to ensure tau > 0
-            # When tau=0.01, log(0.01)=-4.605, when tau=0.07, log(0.07)=-2.659
-            self.log_tau = nn.Parameter(torch.log(torch.tensor(tau)))
-            print(f"CPCLoss: Using learnable temperature (initial tau={tau:.4f})")
-        else:
-            # Fixed temperature - use different name to avoid conflict with @property
-            self.register_buffer('_tau_value', torch.tensor(tau))
-            print(f"CPCLoss: Using fixed temperature (tau={tau:.4f})")
-    
-    @property
-    def tau(self):
-        """Get current temperature value"""
-        if self.learnable_tau:
-            # Clamp log_tau to prevent extreme values
-            # log_tau in [-4, 0] -> tau in [0.018, 1.0]
-            return torch.exp(torch.clamp(self.log_tau, min=-4.0, max=0.0))
-        else:
-            return self._tau_value
+        self.tau = tau
+        print(f"CPCLoss: tau={tau:.4f}")
 
     def forward(self, preds, targets):
         """
@@ -60,12 +38,7 @@ class CPCLoss(nn.Module):
         """
         timestep, B, D = preds.shape
         
-        scale = 1.0  / math.sqrt(D)  # Use math.sqrt for scalar, more efficient
-        
-        # Normalize if requested
-        if self.normalize:
-            preds = F.normalize(preds, dim=-1)
-            targets = F.normalize(targets, dim=-1)
+        scale = 1.0 / math.sqrt(D)
         
         total_loss = 0.0
         total_correct = 0
@@ -94,54 +67,3 @@ class CPCLoss(nn.Module):
         accuracy = total_correct / (B * timestep)
         
         return avg_loss, accuracy
-
-
-class InfoNCELoss(nn.Module):
-    """
-    Alternative simpler InfoNCE implementation
-    Computes loss for a single prediction step
-    
-    Args:
-        temperature (float): Initial temperature parameter (default: 0.07)
-        learnable_temp (bool): Whether temperature is learnable (default: True)
-    """
-    def __init__(self, temperature=0.07, learnable_temp=True):
-        super().__init__()
-        self.learnable_temp = learnable_temp
-        
-        if learnable_temp:
-            # Store log(temperature) as learnable parameter
-            self.log_temp = nn.Parameter(torch.log(torch.tensor(temperature)))
-        else:
-            # Fixed temperature - use different name to avoid conflict with @property
-            self.register_buffer('_temp_value', torch.tensor(temperature))
-    
-    @property
-    def temperature(self):
-        """Get current temperature value"""
-        if self.learnable_temp:
-            return torch.exp(torch.clamp(self.log_temp, min=-4.0, max=0.0))
-        else:
-            return self._temp_value
-    
-    def forward(self, query, key):
-        """
-        Args:
-            query: Query representations [B, D]
-            key: Key representations [B, D]
-        
-        Returns:
-            loss: InfoNCE loss
-        """
-        # Normalize
-        query = F.normalize(query, dim=1)
-        key = F.normalize(key, dim=1)
-        
-        # Compute similarity
-        logits = torch.mm(query, key.t()) / self.temperature
-        
-        # Labels: diagonal is positive
-        labels = torch.arange(query.size(0), device=query.device)
-        
-        loss = F.cross_entropy(logits, labels)
-        return loss
